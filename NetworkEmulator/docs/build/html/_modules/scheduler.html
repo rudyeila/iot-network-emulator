@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>scheduler &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for scheduler</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This module contains th elogic for the scheduler</span>
+<span class="sd">    The scheduler used is the APScheduler</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">apscheduler.schedulers.background</span> <span class="k">import</span> <span class="n">BackgroundScheduler</span>
+
+<span class="kn">from</span> <span class="nn">events</span> <span class="k">import</span> <span class="n">LinkEvent</span><span class="p">,</span> <span class="n">RunCMDEvent</span><span class="p">,</span> <span class="n">OpenTermEvent</span>
+
+<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../index.html#scheduler.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Our implementation of the scheduler intenrally initiaties an APScheduler.BackgroundScheduler</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">topology</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Creates an instance of the scheduler</span>
+
+<span class="sd">            :param scheduler: reference to the APScheduler instance</span>
+<span class="sd">            :type scheduler: APScheduler.BackgroundScheduler</span>
+
+<span class="sd">            :param start_time: The time of when the scheduler begins to scheduler the events. Is used as a reference to normalize the execution time such that this is time 0.</span>
+<span class="sd">            :type start_time: datetime.datetime</span>
+
+<span class="sd">            :param is_started: a boolean that is used to determine whether the scheduler has been started or not</span>
+<span class="sd">            :type is_started: boolean</span>
+
+<span class="sd">            :param events: a list of TimedEvent objects, i.e. the events that are to be schedule.</span>
+<span class="sd">            :type events: list[events.TimedEvent]</span>
+
+<span class="sd">            :param topology: a reference to the Topology class that is used to schedule calls to Topology class methods.</span>
+<span class="sd">            :type topology: NetworkEmulator.Topology</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">BackgroundScheduler</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Will be set when we beging scheduling events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">topology</span>
+
+<div class="viewcode-block" id="Scheduler.schedule_events"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.schedule_events">[docs]</a>    <span class="k">def</span> <span class="nf">schedule_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">,</span> <span class="n">topology</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            This method is used to schedule the different events. Since the APScheduler takes a datetime object for the execution time, we need to convert the event times to dates.</span>
+<span class="sd">            We do this by taking a reference of the start_time and then calling the method _calculate_new_time which creates a time delta object between the events execution time and the start_time</span>
+<span class="sd">            of the scheduler. This time deta object can then be converted to an ISO datetime object.</span>
+
+<span class="sd">            To add more events to the scheduler, you need to define a class for the new events in the events.py module, add the logic to the parser and then add an if statement in this method,</span>
+<span class="sd">            along with the required logic for execution.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">LinkEvent</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">topology</span><span class="o">.</span><span class="n">update_link</span><span class="p">,</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">run_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_new_time</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">execution_delay</span><span class="p">),</span>
+                                       <span class="n">args</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">RunCMDEvent</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span><span class="o">.</span><span class="n">run_cmd</span><span class="p">,</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">run_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_new_time</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">execution_delay</span><span class="p">),</span> <span class="n">args</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">OpenTermEvent</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span><span class="o">.</span><span class="n">open_term</span><span class="p">,</span> <span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">run_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_new_time</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">execution_delay</span><span class="p">),</span> <span class="n">args</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Event_type doesn&#39;t match any predefined event types&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.start"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Stars the schedulers and sets the is_started flag to true.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_started</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Scheduler.get_jobs"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.get_jobs">[docs]</a>    <span class="k">def</span> <span class="nf">get_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Returns the jobs scheduled for execution</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Scheduler.print_jobs"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.print_jobs">[docs]</a>    <span class="k">def</span> <span class="nf">print_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Prints a formatted version of the jobs scheduled for execution</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">print_jobs</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.format_job"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.format_job">[docs]</a>    <span class="k">def</span> <span class="nf">format_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Formats a job so that it can be shown to the user when an API call is made</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_jobs</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_jobs</span><span class="p">(</span><span class="n">job_id</span><span class="o">=</span><span class="n">job_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Scheduler.format_jobs"><a class="viewcode-back" href="../index.html#scheduler.Scheduler.format_jobs">[docs]</a>    <span class="k">def</span> <span class="nf">format_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Formats all of the jobs so that they can be shown to the user when an API call is made</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">job_id</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">jobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;id &quot;</span> <span class="o">+</span> <span class="n">job_id</span><span class="p">)</span>
+            <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">get_job</span><span class="p">(</span><span class="n">job_id</span><span class="p">))</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+            <span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;runtime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">next_run_time</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;function&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+    <span class="k">def</span> <span class="nf">_calculate_new_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This method used to calculate a new date time object for the execution of an event.</span>
+
+<span class="sd">        Since in the event config file a time value in second is provided, this must be converted to a datettime object.</span>
+<span class="sd">        This is done by making note of the time when the scheduler is started, and adding that to the execution time of the event.</span>
+<span class="sd">        This gives a new datetime object, which refers to the correct execution time.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">original_datetime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">delay</span><span class="p">))</span>
+        <span class="n">execution_datetime</span> <span class="o">=</span> <span class="n">original_datetime</span> <span class="o">+</span> <span class="n">delta</span>
+        <span class="k">return</span> <span class="n">execution_datetime</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

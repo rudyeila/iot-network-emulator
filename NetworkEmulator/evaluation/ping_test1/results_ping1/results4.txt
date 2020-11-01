@@ -1,0 +1,55 @@
+PING 10.0.0.20 (10.0.0.20) 56(84) bytes of data.
+[1568130191.804897] 64 bytes from 10.0.0.20: icmp_seq=1 ttl=64 time=72.4 ms
+[1568130191.831143] 64 bytes from 10.0.0.20: icmp_seq=2 ttl=64 time=82.0 ms
+[1568130191.856421] 64 bytes from 10.0.0.20: icmp_seq=3 ttl=64 time=86.9 ms
+[1568130191.873054] 64 bytes from 10.0.0.20: icmp_seq=4 ttl=64 time=83.3 ms
+[1568130191.887678] 64 bytes from 10.0.0.20: icmp_seq=5 ttl=64 time=82.6 ms
+[1568130191.908422] 64 bytes from 10.0.0.20: icmp_seq=6 ttl=64 time=82.9 ms
+[1568130191.923909] 64 bytes from 10.0.0.20: icmp_seq=7 ttl=64 time=82.3 ms
+[1568130191.941069] 64 bytes from 10.0.0.20: icmp_seq=8 ttl=64 time=84.4 ms
+[1568130191.954904] 64 bytes from 10.0.0.20: icmp_seq=9 ttl=64 time=81.6 ms
+[1568130191.972173] 64 bytes from 10.0.0.20: icmp_seq=10 ttl=64 time=84.2 ms
+[1568130191.993171] 64 bytes from 10.0.0.20: icmp_seq=11 ttl=64 time=87.9 ms
+[1568130192.003469] 64 bytes from 10.0.0.20: icmp_seq=12 ttl=64 time=84.6 ms
+[1568130192.018497] 64 bytes from 10.0.0.20: icmp_seq=13 ttl=64 time=83.7 ms
+[1568130192.039015] 64 bytes from 10.0.0.20: icmp_seq=14 ttl=64 time=84.6 ms
+[1568130192.054991] 64 bytes from 10.0.0.20: icmp_seq=15 ttl=64 time=82.5 ms
+[1568130192.071144] 64 bytes from 10.0.0.20: icmp_seq=16 ttl=64 time=82.0 ms
+[1568130192.088570] 64 bytes from 10.0.0.20: icmp_seq=17 ttl=64 time=84.8 ms
+[1568130192.103346] 64 bytes from 10.0.0.20: icmp_seq=18 ttl=64 time=84.6 ms
+[1568130192.122805] 64 bytes from 10.0.0.20: icmp_seq=19 ttl=64 time=85.7 ms
+[1568130192.135185] 64 bytes from 10.0.0.20: icmp_seq=20 ttl=64 time=84.9 ms
+[1568130192.150938] 64 bytes from 10.0.0.20: icmp_seq=21 ttl=64 time=85.6 ms
+[1568130192.168932] 64 bytes from 10.0.0.20: icmp_seq=22 ttl=64 time=87.5 ms
+[1568130192.189668] 64 bytes from 10.0.0.20: icmp_seq=23 ttl=64 time=90.5 ms
+[1568130192.196167] 64 bytes from 10.0.0.20: icmp_seq=24 ttl=64 time=82.5 ms
+[1568130192.216248] 64 bytes from 10.0.0.20: icmp_seq=25 ttl=64 time=81.6 ms
+[1568130192.236328] 64 bytes from 10.0.0.20: icmp_seq=26 ttl=64 time=85.1 ms
+[1568130192.254177] 64 bytes from 10.0.0.20: icmp_seq=27 ttl=64 time=85.0 ms
+[1568130192.271135] 64 bytes from 10.0.0.20: icmp_seq=28 ttl=64 time=81.6 ms
+[1568130192.289926] 64 bytes from 10.0.0.20: icmp_seq=29 ttl=64 time=83.2 ms
+[1568130192.312379] 64 bytes from 10.0.0.20: icmp_seq=30 ttl=64 time=85.1 ms
+[1568130192.330925] 64 bytes from 10.0.0.20: icmp_seq=31 ttl=64 time=83.9 ms
+[1568130192.346880] 64 bytes from 10.0.0.20: icmp_seq=32 ttl=64 time=82.2 ms
+[1568130192.363875] 64 bytes from 10.0.0.20: icmp_seq=33 ttl=64 time=81.9 ms
+[1568130192.382416] 64 bytes from 10.0.0.20: icmp_seq=34 ttl=64 time=81.9 ms
+[1568130192.405974] 64 bytes from 10.0.0.20: icmp_seq=35 ttl=64 time=83.1 ms
+[1568130192.429751] 64 bytes from 10.0.0.20: icmp_seq=36 ttl=64 time=84.5 ms
+[1568130192.448398] 64 bytes from 10.0.0.20: icmp_seq=37 ttl=64 time=88.9 ms
+[1568130192.457275] 64 bytes from 10.0.0.20: icmp_seq=38 ttl=64 time=83.0 ms
+[1568130192.474736] 64 bytes from 10.0.0.20: icmp_seq=39 ttl=64 time=81.4 ms
+[1568130192.498756] 64 bytes from 10.0.0.20: icmp_seq=40 ttl=64 time=81.3 ms
+[1568130192.528352] 64 bytes from 10.0.0.20: icmp_seq=41 ttl=64 time=86.4 ms
+[1568130192.539712] 64 bytes from 10.0.0.20: icmp_seq=42 ttl=64 time=82.1 ms
+[1568130192.560431] 64 bytes from 10.0.0.20: icmp_seq=43 ttl=64 time=85.4 ms
+[1568130192.576738] 64 bytes from 10.0.0.20: icmp_seq=44 ttl=64 time=83.2 ms
+[1568130192.591286] 64 bytes from 10.0.0.20: icmp_seq=45 ttl=64 time=81.9 ms
+[1568130192.617433] 64 bytes from 10.0.0.20: icmp_seq=46 ttl=64 time=88.7 ms
+[1568130192.632684] 64 bytes from 10.0.0.20: icmp_seq=47 ttl=64 time=81.9 ms
+[1568130192.662101] 64 bytes from 10.0.0.20: icmp_seq=48 ttl=64 time=91.0 ms
+[1568130192.670397] 64 bytes from 10.0.0.20: icmp_seq=49 ttl=64 time=82.6 ms
+[1568130192.685121] 64 bytes from 10.0.0.20: icmp_seq=50 ttl=64 time=82.8 ms
+
+--- 10.0.0.20 ping statistics ---
+50 packets transmitted, 50 received, 0% packet loss, time 869ms
+rtt min/avg/max/mdev = 72.479/83.929/91.012/2.858 ms, pipe 6

@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>utils &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># NetworkEmulator/utils.py</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This modules contains some utility methods that are used all over the program</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">from</span> <span class="nn">core.emulator.enumerations</span> <span class="k">import</span> <span class="n">NodeTypes</span>
+<span class="kn">from</span> <span class="nn">core.emulator.emudata</span> <span class="k">import</span> <span class="n">LinkOptions</span>
+
+
+<div class="viewcode-block" id="get_LinkOptions"><a class="viewcode-back" href="../index.html#utils.get_LinkOptions">[docs]</a><span class="k">def</span> <span class="nf">get_LinkOptions</span><span class="p">(</span><span class="n">link_params</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;This class is used derive new LinkOptions() from the LinkEvent object.</span>
+<span class="sd">    LinkOptions are used by CORE to specify delays, bandwidth etc for a specific link.</span>
+
+<span class="sd">    :returns: linkOptions, a convenience object used by core to specify link values (delay, bandwidth, jitter etc.)</span>
+<span class="sd">    :rtype: LinkOptions</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">linkOptions</span> <span class="o">=</span> <span class="n">LinkOptions</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">link_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">parameter</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">newValue</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newValue</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;session&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;delay&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;bandwidth&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">bandwidth</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="c1"># Packet Loss Rate</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;loss&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">per</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="c1"># Packet duplication rate</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;duplication&quot;</span> <span class="ow">or</span> <span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;dup&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">dup</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;jitter&quot;</span><span class="p">):</span>
+            <span class="n">linkOptions</span><span class="o">.</span><span class="n">jitter</span> <span class="o">=</span> <span class="n">newValue</span>
+
+    <span class="k">return</span> <span class="n">linkOptions</span></div>
+
+<span class="k">def</span> <span class="nf">get_host_ip</span><span class="p">():</span>
+      <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+      <span class="k">try</span><span class="p">:</span>
+          <span class="c1"># doesn&#39;t even have to be reachable</span>
+          <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="s1">&#39;10.255.255.255&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+          <span class="n">IP</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="k">except</span><span class="p">:</span>
+          <span class="n">IP</span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span>
+      <span class="k">finally</span><span class="p">:</span>
+          <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+      <span class="k">return</span> <span class="n">IP</span>
+
+<div class="viewcode-block" id="get_cmd_command"><a class="viewcode-back" href="../index.html#utils.get_cmd_command">[docs]</a><span class="k">def</span> <span class="nf">get_cmd_command</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; takes a string of a terminal command, and returns the individual words as a list &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">command</span><span class="o">.</span><span class="n">split</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="getCoreNodeType"><a class="viewcode-back" href="../index.html#utils.getCoreNodeType">[docs]</a><span class="k">def</span> <span class="nf">getCoreNodeType</span><span class="p">(</span><span class="n">type_name</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Get node types as &quot;understood&quot; by the CORE emulator</span>
+
+<span class="sd">        In other words, translate types from our simple language to the CORE language</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;switch&quot;</span><span class="p">):</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;hub&quot;</span><span class="p">):</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">HUB</span>
+    <span class="k">elif</span><span class="p">(</span><span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;rj45&quot;</span> <span class="ow">or</span> <span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;phys&quot;</span> <span class="ow">or</span> <span class="n">type_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;physical&quot;</span><span class="p">):</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">DEFAULT</span>
+
+    <span class="k">return</span> <span class="nb">type</span></div>
+
+<div class="viewcode-block" id="convert_time_to_seconds"><a class="viewcode-back" href="../index.html#utils.convert_time_to_seconds">[docs]</a><span class="k">def</span> <span class="nf">convert_time_to_seconds</span><span class="p">(</span><span class="n">timeValue</span><span class="p">,</span> <span class="n">timeUnit</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Converts time values (for the queue) to seconds (1 ms will become 0.001 second for example)</span>
+
+<span class="sd">	:param timeValue: The actual time value in the specified unit</span>
+<span class="sd">	:param timeUnit: The unit of time (ns, us, ms, min, hr)</span>
+<span class="sd">	    (default is seconds)</span>
+<span class="sd">	:returns: timeInSeconds, the time value converted to seconds</span>
+<span class="sd">	:rtype: float</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="mf">0.0</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;s&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;second&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;seconds&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;sec&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;ns&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;nanosecond&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;nanoseconds&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span> <span class="o">/</span> <span class="mf">0.000000001</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;us&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;microsecond&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;microseconds&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span> <span class="o">/</span> <span class="mf">0.000001</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;ms&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;millisecond&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;milliseconds&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span> <span class="o">/</span> <span class="mf">0.001</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;min&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;mins&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;minute&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;minutes&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;m&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span> <span class="o">*</span> <span class="mf">60.0</span>
+	<span class="k">elif</span> <span class="p">(</span><span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;hr&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;hour&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;hours&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;hrs&quot;</span> <span class="ow">or</span> <span class="n">timeUnit</span><span class="o">.</span><span class="n">lower</span> <span class="o">==</span> <span class="s2">&quot;h&quot;</span><span class="p">):</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span> <span class="o">*</span> <span class="mi">3600</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">timeInSeconds</span> <span class="o">=</span> <span class="n">timeValue</span>
+
+	<span class="k">return</span> <span class="n">timeInSeconds</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

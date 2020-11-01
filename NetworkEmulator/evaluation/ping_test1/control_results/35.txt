@@ -1,0 +1,49 @@
+PING 10.0.0.20 (10.0.0.20) 56(84) bytes of data.
+[1568130161.483410] 64 bytes from 10.0.0.20: icmp_seq=1 ttl=64 time=0.802 ms
+[1568130161.506878] 64 bytes from 10.0.0.20: icmp_seq=2 ttl=64 time=0.491 ms
+[1568130161.527577] 64 bytes from 10.0.0.20: icmp_seq=3 ttl=64 time=0.806 ms
+[1568130161.553567] 64 bytes from 10.0.0.20: icmp_seq=4 ttl=64 time=0.939 ms
+[1568130161.573617] 64 bytes from 10.0.0.20: icmp_seq=5 ttl=64 time=0.797 ms
+[1568130161.598132] 64 bytes from 10.0.0.20: icmp_seq=6 ttl=64 time=0.999 ms
+[1568130161.622555] 64 bytes from 10.0.0.20: icmp_seq=7 ttl=64 time=0.901 ms
+[1568130161.647046] 64 bytes from 10.0.0.20: icmp_seq=8 ttl=64 time=0.827 ms
+[1568130161.676444] 64 bytes from 10.0.0.20: icmp_seq=9 ttl=64 time=0.873 ms
+[1568130161.697000] 64 bytes from 10.0.0.20: icmp_seq=10 ttl=64 time=1.02 ms
+[1568130161.719630] 64 bytes from 10.0.0.20: icmp_seq=11 ttl=64 time=0.990 ms
+[1568130161.739538] 64 bytes from 10.0.0.20: icmp_seq=12 ttl=64 time=0.736 ms
+[1568130161.762504] 64 bytes from 10.0.0.20: icmp_seq=13 ttl=64 time=0.766 ms
+[1568130161.785846] 64 bytes from 10.0.0.20: icmp_seq=14 ttl=64 time=0.555 ms
+[1568130161.810350] 64 bytes from 10.0.0.20: icmp_seq=15 ttl=64 time=0.808 ms
+[1568130161.836718] 64 bytes from 10.0.0.20: icmp_seq=16 ttl=64 time=0.675 ms
+[1568130161.860273] 64 bytes from 10.0.0.20: icmp_seq=17 ttl=64 time=0.901 ms
+[1568130161.880507] 64 bytes from 10.0.0.20: icmp_seq=18 ttl=64 time=0.640 ms
+[1568130161.905959] 64 bytes from 10.0.0.20: icmp_seq=19 ttl=64 time=1.07 ms
+[1568130161.926652] 64 bytes from 10.0.0.20: icmp_seq=20 ttl=64 time=0.887 ms
+[1568130161.946971] 64 bytes from 10.0.0.20: icmp_seq=21 ttl=64 time=0.831 ms
+[1568130161.969136] 64 bytes from 10.0.0.20: icmp_seq=22 ttl=64 time=0.881 ms
+[1568130161.989518] 64 bytes from 10.0.0.20: icmp_seq=23 ttl=64 time=0.743 ms
+[1568130162.015147] 64 bytes from 10.0.0.20: icmp_seq=24 ttl=64 time=1.07 ms
+[1568130162.037320] 64 bytes from 10.0.0.20: icmp_seq=25 ttl=64 time=1.09 ms
+[1568130162.063457] 64 bytes from 10.0.0.20: icmp_seq=26 ttl=64 time=1.06 ms
+[1568130162.094294] 64 bytes from 10.0.0.20: icmp_seq=27 ttl=64 time=1.10 ms
+[1568130162.114778] 64 bytes from 10.0.0.20: icmp_seq=28 ttl=64 time=1.02 ms
+[1568130162.135692] 64 bytes from 10.0.0.20: icmp_seq=29 ttl=64 time=1.08 ms
+[1568130162.156285] 64 bytes from 10.0.0.20: icmp_seq=30 ttl=64 time=1.11 ms
+[1568130162.176565] 64 bytes from 10.0.0.20: icmp_seq=31 ttl=64 time=1.02 ms
+[1568130162.196523] 64 bytes from 10.0.0.20: icmp_seq=32 ttl=64 time=0.755 ms
+[1568130162.218144] 64 bytes from 10.0.0.20: icmp_seq=33 ttl=64 time=0.780 ms
+[1568130162.242057] 64 bytes from 10.0.0.20: icmp_seq=34 ttl=64 time=0.681 ms
+[1568130162.265954] 64 bytes from 10.0.0.20: icmp_seq=35 ttl=64 time=0.736 ms
+[1568130162.289601] 64 bytes from 10.0.0.20: icmp_seq=36 ttl=64 time=0.595 ms
+[1568130162.323107] 64 bytes from 10.0.0.20: icmp_seq=37 ttl=64 time=0.974 ms
+[1568130162.343029] 64 bytes from 10.0.0.20: icmp_seq=38 ttl=64 time=0.645 ms
+[1568130162.366553] 64 bytes from 10.0.0.20: icmp_seq=39 ttl=64 time=0.880 ms
+[1568130162.387185] 64 bytes from 10.0.0.20: icmp_seq=40 ttl=64 time=0.940 ms
+[1568130162.407458] 64 bytes from 10.0.0.20: icmp_seq=41 ttl=64 time=1.03 ms
+[1568130162.427876] 64 bytes from 10.0.0.20: icmp_seq=42 ttl=64 time=0.681 ms
+[1568130162.450192] 64 bytes from 10.0.0.20: icmp_seq=43 ttl=64 time=0.797 ms
+[1568130162.474820] 64 bytes from 10.0.0.20: icmp_seq=44 ttl=64 time=1.19 ms
+
+--- 10.0.0.20 ping statistics ---
+44 packets transmitted, 44 received, 0% packet loss, time 990ms
+rtt min/avg/max/mdev = 0.491/0.869/1.199/0.170 ms

@@ -1,0 +1,28 @@
+event:
+  type: RunCMDEvent
+  time: 0
+  parameters:
+    node: broker
+    cmd: ping -c 1 10.0.0.20
+    wait: False
+---
+event:
+  type: RunCMDEvent
+  time: 0
+  parameters:
+    node: broker
+    cmd: ping -c 1 10.0.0.21
+    wait: False
+---
+event:
+   type: OpenTermEvent
+   time: 0
+   parameters:
+      node: broker
+#event:
+#  type: RunCMDEvent
+#  time: 0
+#  parameters:
+#    node: broker
+#    cmd: mosquitto -v
+#    wait: False

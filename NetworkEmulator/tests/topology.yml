@@ -1,0 +1,22 @@
+topology:
+  nodes:
+    - name: publisher
+      type: host
+    - name: subscriber
+      type: host
+    - name: switch
+      type: switch
+    - name: broker
+      type: host
+    - name: phys
+      type: rj45
+
+  links:
+    - node1: subscriber
+      node2: switch
+    - node1: publisher
+      node2: switch
+    - node1: phys
+      node2: switch
+    - node1: broker
+      node2: switch

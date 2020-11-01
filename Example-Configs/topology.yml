@@ -1,0 +1,35 @@
+# an example of a topology configuration file
+topology:
+  netmask: 10.0.0.0/24
+  nodes:
+    - name: subscriber
+      type: host
+    - name: publisher
+      type: host
+    - name: switch
+      type: switch
+    - name: switch2
+      type: switch
+    - name: broker
+      type: host
+    - name: left
+      type: rj45
+      interface: enp0s8
+      ip: 10.0.0.20
+    - name: right
+      type: rj45
+      interface: enp0s10
+      ip: 10.0.1.21
+  links:
+    - node1: subscriber
+      node2: switch
+    - node1: publisher
+      node2: switch
+    - node1: broker
+      node2: switch2
+    - node1: broker
+      node2: switch
+    - node1: left
+      node2: switch
+    - node1: right
+      node2: switch

@@ -1,0 +1,99 @@
+# An example of an event cnfiguration file
+
+event:
+  parameters:
+    node: broker
+    cmd: mosquitto
+    wait: True
+  time: 0.0 seconds
+  type: RunCMDEvent
+---
+event:
+  parameters:
+    link_params:
+      delay: 1000.0
+    node1: broker
+    node2: switch
+  time: 1.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 2000.0
+    node1: broker
+    node2: switch
+  time: 2.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 3000.0
+    node1: broker
+    node2: switch
+  time: 3.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 4000.0
+    node1: broker
+    node2: switch
+  time: 4.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 5000.0
+    node1: broker
+    node2: switch
+  time: 5.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 6000.0
+    node1: broker
+    node2: switch
+  time: 6.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 7000.0
+    node1: broker
+    node2: switch
+  time: 7.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 8000.0
+    node1: broker
+    node2: switch
+  time: 8.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 9000.0
+    node1: broker
+    node2: switch
+  time: 9.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 10000.0
+    node1: broker
+    node2: switch
+  time: 10.0 seconds
+  type: LinkUpdate

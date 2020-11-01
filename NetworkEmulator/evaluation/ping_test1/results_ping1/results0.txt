@@ -1,0 +1,55 @@
+PING 10.0.0.20 (10.0.0.20) 56(84) bytes of data.
+[1568130187.801560] 64 bytes from 10.0.0.20: icmp_seq=1 ttl=64 time=0.743 ms
+[1568130187.821955] 64 bytes from 10.0.0.20: icmp_seq=2 ttl=64 time=0.608 ms
+[1568130187.842235] 64 bytes from 10.0.0.20: icmp_seq=3 ttl=64 time=0.678 ms
+[1568130187.861737] 64 bytes from 10.0.0.20: icmp_seq=4 ttl=64 time=0.747 ms
+[1568130187.881399] 64 bytes from 10.0.0.20: icmp_seq=5 ttl=64 time=0.485 ms
+[1568130187.901776] 64 bytes from 10.0.0.20: icmp_seq=6 ttl=64 time=0.832 ms
+[1568130187.924349] 64 bytes from 10.0.0.20: icmp_seq=7 ttl=64 time=0.809 ms
+[1568130187.941950] 64 bytes from 10.0.0.20: icmp_seq=8 ttl=64 time=0.613 ms
+[1568130187.961723] 64 bytes from 10.0.0.20: icmp_seq=9 ttl=64 time=0.672 ms
+[1568130187.982056] 64 bytes from 10.0.0.20: icmp_seq=10 ttl=64 time=0.732 ms
+[1568130188.002416] 64 bytes from 10.0.0.20: icmp_seq=11 ttl=64 time=0.871 ms
+[1568130188.021862] 64 bytes from 10.0.0.20: icmp_seq=12 ttl=64 time=0.911 ms
+[1568130188.042871] 64 bytes from 10.0.0.20: icmp_seq=13 ttl=64 time=0.824 ms
+[1568130188.061935] 64 bytes from 10.0.0.20: icmp_seq=14 ttl=64 time=0.655 ms
+[1568130188.084281] 64 bytes from 10.0.0.20: icmp_seq=15 ttl=64 time=0.838 ms
+[1568130188.102623] 64 bytes from 10.0.0.20: icmp_seq=16 ttl=64 time=1.00 ms
+[1568130188.120860] 64 bytes from 10.0.0.20: icmp_seq=17 ttl=64 time=0.826 ms
+[1568130188.142800] 64 bytes from 10.0.0.20: icmp_seq=18 ttl=64 time=0.822 ms
+[1568130188.162399] 64 bytes from 10.0.0.20: icmp_seq=19 ttl=64 time=0.746 ms
+[1568130188.181815] 64 bytes from 10.0.0.20: icmp_seq=20 ttl=64 time=0.658 ms
+[1568130188.201553] 64 bytes from 10.0.0.20: icmp_seq=21 ttl=64 time=0.620 ms
+[1568130188.226357] 64 bytes from 10.0.0.20: icmp_seq=22 ttl=64 time=0.820 ms
+[1568130188.245822] 64 bytes from 10.0.0.20: icmp_seq=23 ttl=64 time=0.672 ms
+[1568130188.266004] 64 bytes from 10.0.0.20: icmp_seq=24 ttl=64 time=0.648 ms
+[1568130188.285920] 64 bytes from 10.0.0.20: icmp_seq=25 ttl=64 time=0.764 ms
+[1568130188.310437] 64 bytes from 10.0.0.20: icmp_seq=26 ttl=64 time=0.767 ms
+[1568130188.333270] 64 bytes from 10.0.0.20: icmp_seq=27 ttl=64 time=1.01 ms
+[1568130188.347028] 64 bytes from 10.0.0.20: icmp_seq=28 ttl=64 time=0.778 ms
+[1568130188.368548] 64 bytes from 10.0.0.20: icmp_seq=29 ttl=64 time=0.664 ms
+[1568130188.386862] 64 bytes from 10.0.0.20: icmp_seq=30 ttl=64 time=0.674 ms
+[1568130188.406779] 64 bytes from 10.0.0.20: icmp_seq=31 ttl=64 time=0.876 ms
+[1568130188.419810] 64 bytes from 10.0.0.20: icmp_seq=32 ttl=64 time=0.832 ms
+[1568130188.438783] 64 bytes from 10.0.0.20: icmp_seq=33 ttl=64 time=0.805 ms
+[1568130188.452181] 64 bytes from 10.0.0.20: icmp_seq=34 ttl=64 time=0.756 ms
+[1568130188.469810] 64 bytes from 10.0.0.20: icmp_seq=35 ttl=64 time=0.805 ms
+[1568130188.489902] 64 bytes from 10.0.0.20: icmp_seq=36 ttl=64 time=0.842 ms
+[1568130188.509873] 64 bytes from 10.0.0.20: icmp_seq=37 ttl=64 time=0.648 ms
+[1568130188.530152] 64 bytes from 10.0.0.20: icmp_seq=38 ttl=64 time=0.719 ms
+[1568130188.549950] 64 bytes from 10.0.0.20: icmp_seq=39 ttl=64 time=0.886 ms
+[1568130188.563504] 64 bytes from 10.0.0.20: icmp_seq=40 ttl=64 time=0.862 ms
+[1568130188.577060] 64 bytes from 10.0.0.20: icmp_seq=41 ttl=64 time=1.14 ms
+[1568130188.590731] 64 bytes from 10.0.0.20: icmp_seq=42 ttl=64 time=1.11 ms
+[1568130188.603792] 64 bytes from 10.0.0.20: icmp_seq=43 ttl=64 time=0.804 ms
+[1568130188.621725] 64 bytes from 10.0.0.20: icmp_seq=44 ttl=64 time=0.494 ms
+[1568130188.641636] 64 bytes from 10.0.0.20: icmp_seq=45 ttl=64 time=0.453 ms
+[1568130188.661659] 64 bytes from 10.0.0.20: icmp_seq=46 ttl=64 time=0.641 ms
+[1568130188.681761] 64 bytes from 10.0.0.20: icmp_seq=47 ttl=64 time=0.400 ms
+[1568130188.701776] 64 bytes from 10.0.0.20: icmp_seq=48 ttl=64 time=0.750 ms
+[1568130188.722717] 64 bytes from 10.0.0.20: icmp_seq=49 ttl=64 time=0.564 ms
+[1568130188.735592] 64 bytes from 10.0.0.20: icmp_seq=50 ttl=64 time=0.525 ms
+
+--- 10.0.0.20 ping statistics ---
+50 packets transmitted, 50 received, 0% packet loss, time 934ms
+rtt min/avg/max/mdev = 0.400/0.748/1.149/0.152 ms

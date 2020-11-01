@@ -1,0 +1,990 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>TopologyConfigurator &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for TopologyConfigurator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This module is the main control point for the emulator.</span>
+
+<span class="sd">    The nodes, links and Topology are all instantiated here as well as the underlying network emulation.</span>
+
+<span class="sd">    The Topology class is the interface that can be used to add, remove and modify nodes and links.</span>
+<span class="sd">    Among other things, the update_link method is used to fluctuate the connection quality of a link.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="kn">from</span> <span class="nn">core.emulator.coreemu</span> <span class="k">import</span> <span class="n">CoreEmu</span>
+<span class="kn">from</span> <span class="nn">core.emulator.emudata</span> <span class="k">import</span> <span class="n">IpPrefixes</span><span class="p">,</span> <span class="n">NodeOptions</span><span class="p">,</span> <span class="n">LinkOptions</span><span class="p">,</span> <span class="n">InterfaceData</span>
+<span class="kn">from</span> <span class="nn">core.emulator.enumerations</span> <span class="k">import</span> <span class="n">NodeTypes</span><span class="p">,</span> <span class="n">EventTypes</span><span class="p">,</span> <span class="n">LinkTypes</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">cleanup</span> <span class="k">import</span> <span class="n">cleanup</span>
+
+
+<span class="c1"># a list containing the names of the created virutal interfaces. Used for clean up at the end.</span>
+<span class="n">interface_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Topology"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology">[docs]</a><span class="k">class</span> <span class="nc">Topology</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class stores information about the current topology and offers interfaces for controlling it</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yml_nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yml_links</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">netmask</span><span class="o">=</span><span class="s2">&quot;10.0.0.0/24&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for the Topology class - Creates a topology and starts the emulation, if no parameters were provided then an empty topolgy is created.</span>
+
+<span class="sd">        :param yml_nodes: a list containing the nodes parsed from the topology configuration file, defaults to None</span>
+<span class="sd">        :type yml_nodes: list(YML_node), optional</span>
+
+<span class="sd">        :param yml_links: a list containing the links parsed from the topology configuration file, defaults to None</span>
+<span class="sd">        :type yml_links: list(parser.YML_link), optional</span>
+
+<span class="sd">        :param netmask: the netmask tells the emulator what sort of IP addresses the virtual nodes should be assigned, defaults to 10.0.0.0/24</span>
+<span class="sd">        :type netmask: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Topology</span><span class="o">.</span><span class="n">prefixes</span> <span class="o">=</span> <span class="n">IpPrefixes</span><span class="p">(</span><span class="n">ip4_prefix</span><span class="o">=</span><span class="n">netmask</span><span class="p">)</span> <span class="c1">#prefixes  # CORE prefixes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coreemu</span> <span class="o">=</span>  <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coreemu&quot;</span><span class="p">,</span> <span class="n">CoreEmu</span><span class="p">())</span> <span class="c1"># CORE container for sessions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coreemu</span><span class="o">.</span><span class="n">create_session</span><span class="p">()</span>       <span class="c1"># CORE session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flag_physical_node</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">netmask</span> <span class="o">=</span> <span class="n">netmask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interfaceDict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inter_nodes</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># Nodes from coreNode types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physical_links</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list_physical_links</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">EventTypes</span><span class="o">.</span><span class="n">CONFIGURATION_STATE</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">yml_nodes</span> <span class="ow">and</span> <span class="n">yml_links</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_topology</span><span class="p">(</span><span class="n">yml_nodes</span><span class="p">,</span> <span class="n">yml_links</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">instantiate</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_init_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yml_nodes</span><span class="p">,</span> <span class="n">yml_links</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Adds the nodes and links from the YML lists to the emulator</span>
+
+<span class="sd">        :param yml_nodes: a list containing the nodes parsed from the topology configuration file, defaults to None</span>
+<span class="sd">        :type yml_nodes: list(YML_node), optional</span>
+
+<span class="sd">        :param yml_links: a list containing the links parsed from the topology configuration file, defaults to None</span>
+<span class="sd">        :type yml_links: list(parser.YML_link), optional</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># sort the nodes such that the host nodes are initialized at the beginning, then the switches then the physical nodes at the end.</span>
+        <span class="c1">#yml_nodes.sort(key=lambda x: x.type, reverse=True)</span>
+        <span class="c1"># initialize nodes</span>
+        <span class="k">for</span> <span class="n">yml_node</span> <span class="ow">in</span> <span class="n">yml_nodes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">yml_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">yml_node</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">yml_node</span><span class="o">.</span><span class="n">interface</span><span class="p">,</span> <span class="n">yml_node</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+
+        <span class="c1"># initialize links</span>
+        <span class="k">for</span> <span class="n">yml_link</span> <span class="ow">in</span> <span class="n">yml_links</span><span class="p">:</span>
+            <span class="n">first_node_name</span> <span class="o">=</span> <span class="n">yml_link</span><span class="o">.</span><span class="n">node1_name</span>
+            <span class="n">second_node_name</span> <span class="o">=</span> <span class="n">yml_link</span><span class="o">.</span><span class="n">node2_name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">instantiate</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">interLinkObj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_physical_links</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_up_physical_link</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">interLinkObj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+
+
+
+<div class="viewcode-block" id="Topology.add_node"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.add_node">[docs]</a>    <span class="k">def</span> <span class="nf">add_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">,</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">node_interface</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">node_ip</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        adds a node to the emulator</span>
+
+<span class="sd">        :param node_name: the name of the name that needs to be created</span>
+<span class="sd">        :type node_name: str</span>
+
+<span class="sd">        :param node_type: the type of the node to be created. Possible types {rj45, switch, hub, host}</span>
+<span class="sd">        :type node_type: str</span>
+
+<span class="sd">        :param node_interface: the name of the physical interface that needs to be associated with this node. Only required incase of an RJ45 node, defaults to None</span>
+<span class="sd">        :type node_interface: str, optional</span>
+
+<span class="sd">        :param node_ip: the IP address that will be assigne to the node, only required incase of an RJ45 node, defaults to None</span>
+<span class="sd">        :type node_ip: str, optional</span>
+
+<span class="sd">        :return: returns the node that was created and added the emulator</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterNode</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">node_name</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A node with name </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2"> already exists in the topology!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node_name</span><span class="p">))</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="n">InterNode</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">node_interface</span><span class="p">,</span> <span class="n">node_ip</span><span class="p">)</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">add_node_to_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">is_physical</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flag_physical_node</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1">#self.interNodeObjects.append(node)</span>
+        <span class="k">return</span> <span class="n">node</span></div>
+
+
+
+<span class="c1">#    def _update_topology(self, interLinkObj):</span>
+
+
+<div class="viewcode-block" id="Topology.delete_node"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.delete_node">[docs]</a>    <span class="k">def</span> <span class="nf">delete_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Deletes the node with the specified name from the emulator</span>
+
+<span class="sd">        :param node_name: the name of the node to be deleted</span>
+<span class="sd">        :type node_name: str</span>
+
+<span class="sd">        :return: A dictionary containing the data of the node that was deleted, this is used by the API.</span>
+<span class="sd">        :rtype: dict(str)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Node with name </span><span class="si">{}</span><span class="s2"> was not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node_name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">node_links</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">links</span>
+            <span class="n">delete_res</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">node_links</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">delete_node</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="c1">#print(&quot;{} successfully deleted!&quot;.format(node))</span>
+            <span class="k">return</span> <span class="n">delete_res</span></div>
+
+
+<div class="viewcode-block" id="Topology.add_link"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.add_link">[docs]</a>    <span class="k">def</span> <span class="nf">add_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Creates and adds a link between the two specified nodes to the emulator</span>
+
+<span class="sd">        :param first_node_name: the name of the first node that is part of the link</span>
+<span class="sd">        :type first_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that is part of the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :return: the newly created InterLink object</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterLink</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">first_node_name</span> <span class="o">==</span> <span class="n">second_node_name</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;You can&#39;t create a link between the same node. Node one and node two must be different&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You can&#39;t create a link between the same node. Node one and node two must be different&quot;</span><span class="p">)</span>
+        <span class="n">first_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">)</span>
+        <span class="n">second_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">second_node_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">first_node</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">second_node</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Either </span><span class="si">{0}</span><span class="s2"> or </span><span class="si">{1}</span><span class="s2"> doesn&#39;t match the nodes defined in the nodes part of the config file&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either </span><span class="si">{0}</span><span class="s2"> or </span><span class="si">{1}</span><span class="s2"> doesn&#39;t match the nodes defined in the nodes part of the config file&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+
+
+        <span class="c1"># create a link object (This object stores important information about the links)</span>
+        <span class="n">interLinkObj</span> <span class="o">=</span> <span class="n">InterLink</span><span class="p">(</span><span class="n">first_node</span><span class="p">,</span> <span class="n">second_node</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;A link already exists between </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2"> within the topology&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A link already exists between </span><span class="si">{}</span><span class="s2"> and </span><span class="si">{}</span><span class="s2"> within the topology&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+        <span class="c1"># Add link object to the topology</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+        <span class="c1"># add variables for easier reference</span>
+        <span class="n">first_inter_node</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span>
+        <span class="n">second_inter_node</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span>
+        <span class="n">first_interface</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_interface</span>
+        <span class="n">second_interface</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_interface</span>
+
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">has_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">list_physical_links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+            <span class="c1">#continue ## handle physical nodes at the end</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># No physical nodes in link - Handle directly</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">first_inter_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                  <span class="n">interface_one</span><span class="o">=</span><span class="n">first_interface</span><span class="p">,</span> <span class="n">interface_two</span><span class="o">=</span><span class="n">second_interface</span><span class="p">)</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">is_in_CORE</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">first_inter_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">second_inter_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">first_interface</span>
+            <span class="n">second_inter_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">first_inter_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">second_interface</span>
+        <span class="c1"># Add the link to each of the nodes</span>
+        <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+        <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">init</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_topology</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">interLinkObj</span></div>
+
+<div class="viewcode-block" id="Topology.update_link"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.update_link">[docs]</a>    <span class="k">def</span> <span class="nf">update_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">,</span> <span class="n">link_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Updates the link options between the two specified nodes with the provided link_options to the emulator</span>
+
+<span class="sd">        :param first_node_name: the name of the first node that is part of the link</span>
+<span class="sd">        :type first_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that is part of the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :param link_options: The link_options to update the link with. CORE provides a convenience LinkOptions class for this. Defaults to None</span>
+<span class="sd">        :type link_options:  core.emulator.emudata.LinkOptions, optional</span>
+
+<span class="sd">        :return: True if the link was updated succesfully, False otherwise</span>
+<span class="sd">        :rtype: boolean</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># get nodes by name</span>
+        <span class="n">first_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">)</span>
+        <span class="n">second_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">second_node_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">first_node</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">second_node</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> or </span><span class="si">{1}</span><span class="s2"> does not seem to match any known node within the topology&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># get link between the two nodes (if it exists) - Link exists when the two nodes are directly connected (e.g. not through a switch)</span>
+        <span class="n">interLinkObj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_link_by_node_names</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="c1"># This is the case when a switch connects the two nodes -</span>
+            <span class="c1"># in this case we update the link between the first node and second but use the interface used to connect node1 with the switch to do so</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Link to be updated: </span><span class="si">{0}</span><span class="s2"> ---- </span><span class="si">{1}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="c1"># Figure out which switch is used to connect the first and the second nodes together</span>
+            <span class="n">switch</span> <span class="o">=</span> <span class="n">first_node</span><span class="o">.</span><span class="n">reachable_through_switch</span><span class="p">[</span><span class="n">second_node</span><span class="p">]</span>
+
+            <span class="c1"># Rertrieve link object that connects the first node with the switch and therefore with the second node</span>
+            <span class="n">interLinkObj</span> <span class="o">=</span> <span class="n">first_node</span><span class="o">.</span><span class="n">get_inter_link</span><span class="p">(</span><span class="n">switch</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The two nodes (</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">) you provided don&#39;t seem to be connected. Neither directly nor through a switch.&quot;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">update_link</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                     <span class="n">interface_one_id</span><span class="o">=</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_interface</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>  <span class="n">link_options</span><span class="o">=</span><span class="n">link_options</span><span class="p">)</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">link_options</span> <span class="o">=</span> <span class="n">link_options</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LINK UPDATED! 1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># this is the case when the two nodes are directly connected</span>
+            <span class="c1">## Case when second node is a switch (no second interface)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">update_link</span><span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                              <span class="n">interface_one_id</span><span class="o">=</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_interface</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">link_options</span><span class="o">=</span><span class="n">link_options</span><span class="p">)</span>
+                <span class="n">interLinkObj</span><span class="o">.</span><span class="n">link_options</span> <span class="o">=</span> <span class="n">link_options</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LINK UPDATED! 2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">update_link</span><span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">interface_one_id</span><span class="o">=</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_interface</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">interface_two_id</span><span class="o">=</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_interface</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">link_options</span><span class="o">=</span><span class="n">linkEvent</span><span class="o">.</span><span class="n">linkOptions</span><span class="p">)</span>
+                <span class="n">interLinkObj</span><span class="o">.</span><span class="n">link_options</span> <span class="o">=</span> <span class="n">link_options</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LINK UPDATED! 3</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Interlink Object = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">))</span>
+        <span class="c1">#print(&quot;Interlink Object = {}&quot;.format(interLinkObj))</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Link between </span><span class="si">%s</span><span class="s2"> and </span><span class="si">%s</span><span class="s2"> is updated with new link options: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">link_options</span><span class="p">))</span>
+        <span class="c1">#print(&quot;Link between %s and %s is updated&quot; % (interLinkObj.first_node.name, interLinkObj.second_node.name))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;link updated!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Topology.delete_link"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.delete_link">[docs]</a>    <span class="k">def</span> <span class="nf">delete_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Deletes the link between the two specified nodes if it exists</span>
+
+<span class="sd">        :param first_node_name: the name of the first node that is part of the link</span>
+<span class="sd">        :type first_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that is part of the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :return: the deleted InterLink object</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterLink</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+
+        <span class="n">link</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_link_by_node_names</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">link</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;removing link</span><span class="se">\n</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">link</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">link</span><span class="o">.</span><span class="n">has_physical</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">list_physical_links</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
+
+            <span class="n">first_interface</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">first_interface</span>
+            <span class="n">second_interface</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">second_interface</span>
+            <span class="n">if1_id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">if2_id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">first_interface</span><span class="p">):</span>
+                <span class="n">if1_id</span> <span class="o">=</span> <span class="n">first_interface</span><span class="o">.</span><span class="n">id</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">second_interface</span><span class="p">):</span>
+                <span class="n">if2_id</span> <span class="o">=</span> <span class="n">second_interface</span><span class="o">.</span><span class="n">id</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">delete_link</span><span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">link</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">if1_id</span><span class="p">,</span> <span class="n">if2_id</span><span class="p">)</span>
+            <span class="n">link</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Successfully removed link&quot;</span><span class="p">)</span>
+
+            <span class="c1"># This line was commented when adding the blackbox functionality... i.e. external VMs are able to communicate with the emulator</span>
+            <span class="c1">#self._update_topology()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Link to be removed was not found (</span><span class="si">{}</span><span class="s2"> ----- </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">link</span></div>
+
+    <span class="k">def</span> <span class="nf">_update_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># update reachablility</span>
+        <span class="k">for</span> <span class="n">interLinkObj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+            <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">interLinkObj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_physical_links</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_up_physical_link</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+
+    <span class="k">def</span> <span class="nf">_set_up_physical_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interLinkObj</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Handle phyiscal links at the ends, because we want to make sure that all other links have already been created (This saves us trouble)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="n">physical_inter_node</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span>
+            <span class="n">second_inter_node</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span>
+            <span class="n">physicalNode</span>  <span class="o">=</span> <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">CORE_node</span>
+            <span class="n">secondNode</span> <span class="o">=</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">CORE_node</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">physical_inter_node</span> <span class="o">=</span>  <span class="n">interLinkObj</span><span class="o">.</span><span class="n">second_node</span> <span class="c1">## Inter_nodes are the nodes we create (coreNode), not the ones returned by CORE. They contain some useful info for creating links</span>
+            <span class="n">second_inter_node</span> <span class="o">=</span> <span class="n">interLinkObj</span><span class="o">.</span><span class="n">first_node</span> <span class="c1">## The naming is confusing for now and seems redundant. This will all be refractored and cleaned up later.</span>
+            <span class="n">physicalNode</span> <span class="o">=</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">CORE_node</span>
+            <span class="n">secondNode</span> <span class="o">=</span> <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">CORE_node</span>
+
+        <span class="c1"># handle case where second node is a switch (which has no IP address)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">second_inter_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+            <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+            <span class="n">switchConnections</span> <span class="o">=</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">neighbours</span>
+            <span class="c1"># add static route entries for all other nodes connected to the switch from our host</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">switchConnections</span><span class="p">:</span>
+                <span class="n">node_ip</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">ip_address</span>
+                <span class="c1"># add route from physical host to node</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip route add </span><span class="si">{0}</span><span class="s2">/32 dev </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node_ip</span><span class="p">,</span> <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">)))</span>
+    <span class="c1">#    else:</span>
+            <span class="c1"># Add route from host to virtual node -- The other way around can only be added once the session has been instantiated</span>
+            <span class="c1"># in case of a switch, link to switch will be added here</span>
+
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip route add </span><span class="si">{0}</span><span class="s2">/32 dev </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">second_inter_node</span><span class="o">.</span><span class="n">ip_address</span><span class="p">,</span> <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">physical_links</span><span class="p">[</span><span class="n">physical_inter_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">second_inter_node</span>
+            <span class="n">first_interface</span> <span class="o">=</span> <span class="n">physical_inter_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">second_inter_node</span><span class="p">]</span>
+            <span class="n">second_interface</span> <span class="o">=</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">physical_inter_node</span><span class="p">]</span>
+
+            <span class="c1"># Avoid double adding a link when this method is called later.</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">interLinkObj</span><span class="o">.</span><span class="n">is_in_CORE</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">physical_inter_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">second_inter_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                  <span class="n">first_interface</span><span class="p">)</span><span class="c1">#, second_interface)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">interLinkObj</span><span class="p">)</span>
+                <span class="n">interLinkObj</span><span class="o">.</span><span class="n">is_in_CORE</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># this part sets up the routing tables of the different nodes that are reachable from physical node.</span>
+            <span class="c1"># This makes sure communication can happen.</span>
+        <span class="n">host_ip</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_host_ip</span><span class="p">()</span>
+        <span class="n">nodes_connected_to_physical</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">second_inter_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+            <span class="n">switch</span> <span class="o">=</span> <span class="n">second_inter_node</span>
+            <span class="n">switchConnections</span> <span class="o">=</span> <span class="n">switch</span><span class="o">.</span><span class="n">links</span>
+            <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">switchConnections</span><span class="p">:</span> <span class="c1"># of type interLinkObj</span>
+                <span class="n">first_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">first_node</span>
+                <span class="n">second_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">second_node</span>
+                <span class="c1">## Make sure the node isn&#39;t the switch itself, and isn&#39;t the actual phyiscal node that we are trying to handle</span>
+                <span class="c1"># In other words, get all nodes that can be reached from the physical node through the switch</span>
+                <span class="k">if</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">switch</span> <span class="ow">and</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">physicalNode</span> <span class="ow">and</span> <span class="n">first_node</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">first_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                        <span class="n">nodes_connected_to_physical</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first_node</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">second_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">switch</span> <span class="ow">and</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">physicalNode</span> <span class="ow">and</span> <span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">second_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                        <span class="n">nodes_connected_to_physical</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">second_node</span><span class="p">)</span>
+
+
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                <span class="c1">## print(&quot;second Node {0} with type {1} has dict {2}&quot;.format(second))</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+                <span class="n">interface</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">switch</span><span class="p">]</span>
+                <span class="n">command</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip route replace </span><span class="si">{0}</span><span class="s2">/32 dev eth</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host_ip</span><span class="p">,</span> <span class="n">interface</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">cmd</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="c1">#    self._handle_physical_links()</span>
+
+    <span class="k">def</span> <span class="nf">_handle_physical_links</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            this method sets up the routing tables of the different nodes that are reachable from the</span>
+<span class="sd">            physical node.</span>
+<span class="sd">            This makes sure communication can happen.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1">## physicalNode and secondNode are from the inter-core type that I created (Class InterNode())</span>
+        <span class="k">for</span> <span class="n">physicalNode</span><span class="p">,</span> <span class="n">secondNode</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">physical_links</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">host_ip</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_host_ip</span><span class="p">()</span>
+            <span class="n">nodes_connected_to_physical</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">secondNode</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+                <span class="n">switch</span> <span class="o">=</span> <span class="n">secondNode</span>
+                <span class="n">switchConnections</span> <span class="o">=</span> <span class="n">switch</span><span class="o">.</span><span class="n">links</span>
+                <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">switchConnections</span><span class="p">:</span> <span class="c1"># of type interLinkObj</span>
+                    <span class="n">first_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">first_node</span>
+                    <span class="n">second_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">second_node</span>
+                    <span class="c1">## Make sure the node isn&#39;t the switch itself, and isn&#39;t the actual phyiscal node that we are trying to handle</span>
+                    <span class="c1"># In other words, get all nodes that can be reached from the physical node through the switch</span>
+                    <span class="k">if</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">switch</span> <span class="ow">and</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">physicalNode</span> <span class="ow">and</span> <span class="n">first_node</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">&quot;rj45&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">first_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                            <span class="n">nodes_connected_to_physical</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first_node</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">second_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">switch</span> <span class="ow">and</span> <span class="n">first_node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">physicalNode</span> <span class="ow">and</span> <span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">!=</span> <span class="s2">&quot;rj45&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">second_node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                            <span class="n">nodes_connected_to_physical</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">second_node</span><span class="p">)</span>
+
+
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_connected_to_physical</span><span class="p">:</span>
+                <span class="c1">## print(&quot;second Node {0} with type {1} has dict {2}&quot;.format(second))</span>
+                <span class="n">interface</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">switch</span><span class="p">]</span>
+                <span class="n">command</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip route replace </span><span class="si">{0}</span><span class="s2">/32 dev eth</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host_ip</span><span class="p">,</span> <span class="n">interface</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">cmd</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+                <span class="c1">## print(&quot;{0} ran following command: {1}&quot;.format(node.name, command))</span>
+                <span class="c1">#ping = utils.get_cmd_command(&quot;ping -c 3 {0}&quot;.format(host_ip))</span>
+                <span class="c1">#result = node.CORE_node.client.icmd(command)</span>
+                <span class="c1">## print(&quot;{0} ran following command: {1}&quot;.format(node.name, ping))</span>
+                <span class="c1">## print(result)</span>
+
+<div class="viewcode-block" id="Topology.get_node_by_name"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.get_node_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_node_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodeName</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Conveniece method that retrieves the InterNode object belonging to the node with the provided name</span>
+
+<span class="sd">        :param nodeName: the name of the node that should be retrieved</span>
+<span class="sd">        :type nodeName: str</span>
+
+<span class="sd">        :return: InterNode object with the specified name</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterNode</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">nodeName</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()):</span>
+                <span class="k">return</span> <span class="n">node</span></div>
+
+<div class="viewcode-block" id="Topology.get_link_by_node_names"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.get_link_by_node_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_link_by_node_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Conveniece method that retrieves the InterLink object belonging to the link between the two specified node names</span>
+
+<span class="sd">        :param first_node_name: the name of the first node that is part of the link</span>
+<span class="sd">        :type first_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that is part of the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :return: the InterLink object that is associated with the link between the two provided node names</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterLink</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">first_node_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">and</span>
+                <span class="n">link</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">second_node_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()):</span>
+                <span class="k">return</span> <span class="n">link</span></div>
+        <span class="c1">#raise ValueError(&quot;No link between {} and {} has been found. Make sure you provided the nodes in the right order.&quot;.format(first_node_name, second_node_name))</span>
+
+    <span class="k">def</span> <span class="nf">get_ip_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodeName</span><span class="p">):</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">get_inter_node_by_name</span><span class="p">(</span><span class="n">nodeName</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">ip_address</span>
+
+
+    <span class="k">def</span> <span class="nf">get_CORE_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">core_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+            <span class="n">core_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">CORE_node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">core_nodes</span>
+
+<div class="viewcode-block" id="Topology.get_data"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        creates and returns a dictionary containing all of the topology&#39;s important data, such as the nodes and the links.</span>
+
+<span class="sd">        :return: a dictionary containing information about the topology. This is mainly used by the API.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">nodes_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+            <span class="n">node_data</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">nodes_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_data</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;nodes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodes_data</span>
+
+        <span class="n">links_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+            <span class="n">link_data</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+            <span class="n">links_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">link_data</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;links&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">links_data</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="Topology.shutdown"><a class="viewcode-back" href="../index.html#TopologyConfigurator.Topology.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hard</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Shutsdown the topology, kills any underlying processes and removes any virtual interfaces and bridges that were created</span>
+<span class="sd">        if hard is set to True, a hard shutdown is performed. All virtual devices created by the emulator are removed and all processes are killed.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+<span class="c1">#        for node in self.interNodeObjects:</span>
+<span class="c1">#            node.shutdown()</span>
+            <span class="c1"># if (node.is_physical == True):</span>
+            <span class="c1">#     ## Remove virtual interfaces</span>
+            <span class="c1">#     subprocess.call(utils.get_cmd_command(&quot;sudo ip link del {0}&quot;.format(node.vethInName)))</span>
+            <span class="c1">#     subprocess.call(utils.get_cmd_command(&quot;sudo ip link del {0}&quot;.format(node.vethOutName)))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coreemu</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">CoreCommandError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">global</span> <span class="n">interface_names</span>
+        <span class="n">cleanup</span><span class="p">(</span><span class="n">interface_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hard</span><span class="p">:</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">&#39;core-cleanup&#39;</span><span class="p">])</span></div>
+        <span class="c1">#global session</span>
+        <span class="c1">#session = self.coreemu.create_session()</span>
+        <span class="c1"># self.flag_physical_node = False</span>
+    	<span class="c1"># self.prefixes = None # CORE prefixes</span>
+    	<span class="c1"># self.coreemu = None # CORE container for sessions</span>
+    	<span class="c1"># self.session = None       # CORE session</span>
+        <span class="c1"># self.interfaceDict = {}</span>
+        <span class="c1"># self.inter_nodes = [] # Nodes from coreNode types</span>
+        <span class="c1"># self.physical_links = {}</span>
+        <span class="c1"># self.list_physical_links = []</span>
+        <span class="c1"># self.interNodeObjects = []</span>
+        <span class="c1"># self.interLinkObjects = []</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s1">&#39;Netmask = </span><span class="si">{}</span><span class="se">\n</span><span class="s1">Topology has the following nodes:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">netmask</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Name: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\t</span><span class="s2">IP: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\t</span><span class="s2">Type: </span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">ip_address</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;and the following links:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">interLinkObjects</span><span class="p">:</span>
+            <span class="n">first_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">first_node</span>
+            <span class="n">second_node</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">second_node</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Node </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">) ---------- Node </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">first_node</span><span class="o">.</span><span class="n">ip_address</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">second_node</span><span class="o">.</span><span class="n">ip_address</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="InterLink"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterLink">[docs]</a><span class="k">class</span> <span class="nc">InterLink</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Container Class for parsed &quot;links&quot; from config file &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node</span><span class="p">,</span> <span class="n">second_node</span><span class="p">):</span>
+        <span class="c1"># first node and second are from InterNode type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span> <span class="o">=</span> <span class="n">first_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span> <span class="o">=</span> <span class="n">second_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_options</span> <span class="o">=</span> <span class="n">LinkOptions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_in_CORE</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1">## Flag gets set to true when the link is added to the actual underlying CORE session</span>
+                                <span class="c1"># This is useful later when adding new links from the API and having to update all of the physical connections.</span>
+                                <span class="c1"># Is used in the _set_up_physical_link method.</span>
+
+        <span class="c1"># If either of the nodes is a physical node then set phyiscal flag of the node</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">has_physical</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">has_physical</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Add each of the nodes to the others &quot;neighbours&quot; list</span>
+        <span class="n">first_node</span><span class="o">.</span><span class="n">neighbours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">second_node</span><span class="p">)</span>
+        <span class="n">second_node</span><span class="o">.</span><span class="n">neighbours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first_node</span><span class="p">)</span>
+
+
+        <span class="c1">## create interface for FIRST node</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span><span class="p">):</span>
+            <span class="n">interface_data</span> <span class="o">=</span> <span class="n">InterfaceData</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">7</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span> <span class="o">=</span> <span class="n">interface_data</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">second_node</span><span class="o">.</span><span class="n">has_switch_connection</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="n">Topology</span><span class="o">.</span><span class="n">prefixes</span><span class="o">.</span><span class="n">create_interface</span><span class="p">(</span><span class="n">first_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span> <span class="o">=</span> <span class="n">interface</span>
+
+        <span class="c1"># Add interface to the nodes &quot;interface&quot; dictionary - This helps track which interface was used for which link</span>
+        <span class="n">first_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">second_node</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span>
+
+        <span class="c1"># Repeat for SECOND node</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span><span class="p">):</span>
+            <span class="n">interface_data</span> <span class="o">=</span> <span class="n">InterfaceData</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">7</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span> <span class="o">=</span> <span class="n">interface_data</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+            <span class="n">first_node</span><span class="o">.</span><span class="n">has_switch_connection</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="n">Topology</span><span class="o">.</span><span class="n">prefixes</span><span class="o">.</span><span class="n">create_interface</span><span class="p">(</span><span class="n">second_node</span><span class="o">.</span><span class="n">CORE_node</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span> <span class="o">=</span> <span class="n">interface</span>
+
+        <span class="n">second_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="n">first_node</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span>
+
+        <span class="c1"># first_node.handle_switch_case()</span>
+        <span class="c1"># second_node.handle_switch_case()</span>
+
+    <span class="k">def</span> <span class="nf">_get_link_options_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">delay</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> microseconds&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;bandwidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> bits per second&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">per</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;packet_loss_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">per</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">dup</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;packet_duplication_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">dup</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">jitter</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;jitter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">link_options</span><span class="o">.</span><span class="n">jitter</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;first_node&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;first_node_ip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">ip_address</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;second_node&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;second_node_ip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">ip_address</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;link_options&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_link_options_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;removing link</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">neighbours</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">neighbours</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">interfaces</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="p">]</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            remove form node links list!</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="c1"># update reachability based on new setting now.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">reachable_through_switch</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">indirect_neighbours</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">reachable_through_switch</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">indirect_neighbours</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">handle_switch_case</span><span class="p">()</span>
+        <span class="c1"># if (self.second_node.type == NodeTypes.SWITCH):</span>
+        <span class="c1">#     reachable_through_switch = self.first_node.reachable_through_switch[self.second_node]</span>
+        <span class="c1">#     for node in reachable_through_switch:</span>
+        <span class="c1">#         if node in self.first_node.indirect_neighbours</span>
+        <span class="c1">#             self.first_node.indirect_neighbours.remove(node)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Successfully removed link</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">get_first_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span>
+
+    <span class="k">def</span> <span class="nf">get_second_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">InterLink</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">first_node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_node</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">second_node</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="si">{0}</span><span class="s1"> -------- </span><span class="si">{1}</span><span class="s1"></span>
+<span class="s1">Has physical: </span><span class="si">{2}</span><span class="s1"></span>
+<span class="s1">First Interface </span><span class="si">{3}</span><span class="s1"> ------ Second Interface </span><span class="si">{4}</span><span class="s1"></span>
+<span class="s1">Already in Session? </span><span class="si">{5}</span><span class="s1"></span>
+<span class="s1">                    &#39;&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_physical</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_interface</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_interface</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_in_CORE</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="InterNode"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode">[docs]</a><span class="k">class</span> <span class="nc">InterNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Container Class for parsed &quot;nodes&quot; from config file</span>
+
+<span class="sd">        Also initializes virtual ethernet interfaces incase the node is physical, and store the interfaces in the class</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">interface</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ip_address</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type_name</span> <span class="o">=</span> <span class="nb">type</span> <span class="c1">## type name is a string that is taken directly from the config file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">getCoreNodeType</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span> <span class="c1"># NodeTypes from CORE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="p">(</span><span class="nb">type</span> <span class="o">==</span> <span class="s2">&quot;rj45&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">RJ45</span> <span class="k">else</span> <span class="kc">False</span> <span class="c1"># Is physical node?</span>
+
+        <span class="c1">## used only for phyiscal interfaces - handled by method init_veth()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+        <span class="c1">## Interface on the physical host that is connected to this physical node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">interface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">ip_address</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;initializing virtual interfaces for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_veth</span><span class="p">()</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Finished initializing virtual interfaces for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1">## interLinkObjects - Handled in Topology._parseLinkConfig()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neighbours</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># nodes that are directly connected to self</span>
+
+        <span class="c1"># key is the second node in a link, value is the actual CORE_interface return by IpPrefixes.create_interface()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interfaces</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># if node is connected to a switch, then further nodes that are connected to that switch should be reachable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_switch_connection</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1">## Handled when adding the links</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reachable_through_switch</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indirect_neighbours</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+
+<div class="viewcode-block" id="InterNode.get_data"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Method used by api to get data and display them</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type_name</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;ip_address&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">neighbours</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbours</span><span class="p">:</span>
+                <span class="n">neighbour_data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">type_name</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;ip_address&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">ip_address</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;direct_connection&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">neighbours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbour_data</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indirect_neighbours</span><span class="p">:</span>
+                <span class="n">neighbour_data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">type_name</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;ip_address&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">ip_address</span>
+                <span class="n">neighbour_data</span><span class="p">[</span><span class="s1">&#39;direct_connection&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">neighbours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">neighbour_data</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;neighbours&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">neighbours</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+    <span class="k">def</span> <span class="nf">open_term</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sh</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;opening </span><span class="si">{}</span><span class="s2"> terminal from </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">term</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">term</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+
+<div class="viewcode-block" id="InterNode.icmd"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode.icmd">[docs]</a>    <span class="k">def</span> <span class="nf">icmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            runs command from the node and displays result in the main console</span>
+<span class="sd">            return the status code of the execution</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">icmd</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="n">command</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">wait</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">cmd</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="n">command</span><span class="p">),</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">cmd</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="n">command</span><span class="p">),</span> <span class="n">wait</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="InterNode.add_node_to_topology"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode.add_node_to_topology">[docs]</a>    <span class="k">def</span> <span class="nf">add_node_to_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topology</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            Adds this node to the provided topology, and updates the necessary internal information</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">):</span>
+                <span class="n">ip_split</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+                <span class="nb">id</span> <span class="o">=</span> <span class="n">ip_split</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># id should be equal host identifier from ip address. This is to avoid CORE assigning an identical IP address to another virtual node</span>
+            <span class="c1">#print(&quot;id={}&quot;.format(id))</span>
+            <span class="n">coreNode</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">_id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">node_options</span><span class="o">=</span><span class="n">NodeOptions</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;rj45&quot;</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_host_ip</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span> <span class="o">=</span> <span class="n">coreNode</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># all other nodes</span>
+            <span class="n">coreNode</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">node_options</span><span class="o">=</span><span class="n">NodeOptions</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">type_name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">prefixes</span><span class="o">.</span><span class="n">ip4_address</span><span class="p">(</span><span class="n">coreNode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span> <span class="o">=</span> <span class="n">coreNode</span>
+
+        <span class="c1">#print(&quot;Node: {} has internal ID {}&quot;.format(self.name, self.CORE_node.id))</span>
+
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">topology</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+            <span class="n">topology</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">handle_switch_case</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">has_switch_connection</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">neighbour</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighbours</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">neighbour</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">NodeTypes</span><span class="o">.</span><span class="n">SWITCH</span><span class="p">:</span>
+                    <span class="n">switch</span>  <span class="o">=</span> <span class="n">neighbour</span>
+                    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">switch</span><span class="o">.</span><span class="n">neighbours</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">reachable_through_switch</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">switch</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">indirect_neighbours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+    <span class="c1">#        print(&quot;node is {0}&quot;.format(self.name))</span>
+        <span class="c1">#    for k,v in self.reachable_through_switch.iteritems():</span>
+            <span class="c1">#    print(&quot;Key = {0} \t Value = {1}&quot;.format(k.name,v.name))</span>
+                <span class="c1"># print(&quot;Switch dictionary: {0}&quot;.format(self.reachable_through_switch[switch]))</span>
+
+
+    <span class="k">def</span> <span class="nf">get_switch_connected_to_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">switch</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reachable_through_switch</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>    <span class="c1"># for name, age in dictionary.iteritems():  (for Python 2.x)</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">node_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="nf">create_CORE_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span><span class="p">):</span>
+            <span class="c1">## create interface with empty InterfaceData</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="n">InterfaceData</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">7</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interface</span> <span class="o">=</span> <span class="n">Topology</span><span class="o">.</span><span class="n">prefixes</span><span class="o">.</span><span class="n">create_interface</span><span class="p">(</span><span class="n">currentNode</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">interface</span>
+
+    <span class="k">def</span> <span class="nf">get_inter_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_two_name</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">link</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="n">link</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">node_two_name</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">second_node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span>  <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="n">link</span><span class="o">.</span><span class="n">first_node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">node_two_name</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="n">link</span>
+
+<div class="viewcode-block" id="InterNode.init_veth"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode.init_veth">[docs]</a>    <span class="k">def</span> <span class="nf">init_veth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">            in case of a physical node, create the necessary virtual ethernet devices and bridges, to achieve connectivity between the physical and virtual nodes. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># create virtual Ethernet pair  on host computer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">INveth&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">OUTveth&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span> <span class="s2">&quot;ip&quot;</span><span class="p">,</span> <span class="s2">&quot;link&quot;</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;veth&quot;</span><span class="p">,</span> <span class="s2">&quot;peer&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">])</span>
+
+            <span class="c1">## Set up the veth pair</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span> <span class="s2">&quot;ip&quot;</span><span class="p">,</span> <span class="s2">&quot;link&quot;</span><span class="p">,</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span><span class="p">,</span> <span class="s2">&quot;up&quot;</span><span class="p">])</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span> <span class="s2">&quot;ip&quot;</span><span class="p">,</span> <span class="s2">&quot;link&quot;</span><span class="p">,</span> <span class="s2">&quot;set&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">,</span> <span class="s2">&quot;up&quot;</span><span class="p">])</span>
+
+
+            <span class="c1"># If interface was provided, then we have to set up a bridge between the veth and the actual interface that is runnig on the host_ip</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;bridge&quot;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="p">):</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo brctl addbr </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">)))</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo brctl setfd </span><span class="si">{}</span><span class="s2"> 0&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">)))</span> <span class="c1"># Set forward delay = 0</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo brctl addif </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">)))</span> <span class="c1"># Add veth peer that is in the host namespace to bridge</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo brctl addif </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="p">)))</span> <span class="c1"># do the same for the actual network device in the host</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip link set </span><span class="si">{}</span><span class="s2"> up&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">)))</span> <span class="c1"># do the same for the actual network device in the host</span>
+
+
+            <span class="k">global</span> <span class="n">interface_names</span>
+            <span class="n">interface_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">interface_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">)</span></div>
+            <span class="c1">#</span>
+            <span class="c1"># with open(&quot;physical_interfaces.txt&quot;,&quot;a+&quot;) as f:</span>
+            <span class="c1">#     f.write(self.name)</span>
+            <span class="c1">#     f.write(&#39;\n&#39;)</span>
+            <span class="c1">#     f.write(self.bridge_name)</span>
+            <span class="c1">#     f.write(&#39;\n&#39;)</span>
+
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="p">:</span>
+            <span class="n">link</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">links</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<div class="viewcode-block" id="InterNode.shutdown"><a class="viewcode-back" href="../index.html#TopologyConfigurator.InterNode.shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; deletes virtual interfaces at the end of a session &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+
+            <span class="c1"># don&#39;t show output</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">statuses</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip link del </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span><span class="p">))))</span>
+                <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip link del </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span><span class="p">))))</span>
+                <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">get_cmd_command</span><span class="p">(</span><span class="s2">&quot;sudo ip link del </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bridge_name</span><span class="p">))))</span>
+
+            <span class="c1"># Return is used for testing and debugging purposes - The status should be 0 on success.</span>
+            <span class="k">return</span> <span class="n">statuses</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">name = </span><span class="si">{0}</span><span class="s1"></span>
+<span class="s1">type = </span><span class="si">{1}</span><span class="s1"></span>
+<span class="s1">ip_address = </span><span class="si">{2}</span><span class="s1"></span>
+<span class="s1">physical = </span><span class="si">{3}</span><span class="s1"></span>
+<span class="s1">VethIn = </span><span class="si">{4}</span><span class="s1"></span>
+<span class="s1">VethOut = </span><span class="si">{5}</span><span class="s1"></span>
+<span class="s1">Core_Node = </span><span class="si">{6}</span><span class="s1"></span>
+<span class="s1">Links = </span><span class="si">{7}</span><span class="s1"></span>
+<span class="s1">Interfaces = </span><span class="si">{8}</span><span class="s1"></span>
+
+<span class="s1">                &#39;&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_physical</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethInName</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vethOutName</span>
+                            <span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CORE_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interfaces</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="p">(</span><span class="s2">&quot;topologyConfig.txt&quot;</span><span class="p">)</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">nodes</span>
+    <span class="n">subscriber</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">switch</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">publisher</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">subscriber</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">icmd</span><span class="p">([</span><span class="s2">&quot;ping&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span> <span class="n">topology</span><span class="o">.</span><span class="n">prefixes</span><span class="o">.</span><span class="n">ip4_address</span><span class="p">(</span><span class="n">publisher</span><span class="p">)])</span>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

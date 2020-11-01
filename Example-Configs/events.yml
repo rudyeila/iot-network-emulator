@@ -1,0 +1,113 @@
+# Another example of an event config file
+event:
+  time: 0 seconds
+  type: OpenTermEvent
+  parameters:
+    node: broker
+    shell: /bin/bash
+---
+event:
+  type: RunCMDEvent
+  time: 0 seconds
+  parameters:
+    node: broker
+    cmd: ping -c 1 10.0.0.20
+    wait: False # Optional, defaults to True
+---
+event:
+  type: RunCMDEvent
+  time: 0 seconds
+  parameters:
+    node: broker
+    cmd: ping -c 1 10.0.0.21
+    wait: False # Optional, defaults to True
+---
+event:
+  parameters:
+    link_params:
+      delay: 100000.0
+    node1: right
+    node2: broker
+  time: 3.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 150000.0
+    node1: right
+    node2: broker
+  time: 23.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 200000.0
+    node1: right
+    node2: broker
+  time: 26.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 250000.0
+    node1: right
+    node2: broker
+  time: 29.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 300000.0
+    node1: right
+    node2: broker
+  time: 32.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 350000.0
+    node1: right
+    node2: broker
+  time: 35.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 400000.0
+    node1: right
+    node2: broker
+  time: 38.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 450000.0
+    node1: right
+    node2: broker
+  time: 41.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 500000.0
+    node1: right
+    node2: broker
+  time: 44.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 550000.0
+    node1: right
+    node2: broker
+  time: 47.0 seconds
+  type: LinkUpdate

@@ -1,0 +1,38 @@
+# An example of an event configuration file 
+event:
+  type: <LinkTypes> # LinkUpdate, RunCMD, OpenTerm
+  time: <FLOAT> seconds
+  parameters: # The following is only for LinkUpdate type
+    node1: <STRING:Node_Name>
+    node2: <STRING:Node_Name>
+    link_params:
+      <STRING:param>: <FLOAT:value>
+      <STRING:param>: <FLOAT:value>
+      <STRING:param>: <FLOAT:value>
+      <STRING:param>: <FLOAT:value>
+      <STRING:param>: <FLOAT:value>
+
+
+# Example:
+event:
+  type: LinkUpdate
+  time: 2 seconds
+  parameters:
+    node1: subscriber
+    node2: publisher
+    link_params:
+      delay: 100000
+      bandwidth: 1024
+      loss: 10
+      dup: 5
+      jitter: 50
+---     ### THIS IS IMPORTANT TO SEPERATE THE EVENTS!
+event:
+  type: LinkUpdate
+  time: 6 seconds
+  parameters:
+    node1: subscriber
+    node2: phys
+    link_params:
+      delay: 25000
+      bandwidth: 100000

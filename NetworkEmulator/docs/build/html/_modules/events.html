@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>events &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for events</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd"> In this module, the different events that the scheduler can take are defined.</span>
+
+<span class="sd"> When you want to add an event, there are 3 parts of the code that you mainly have to modify.</span>
+<span class="sd"> 1. Define a class for the event here. The new event should inherit from the TimedEvent class and should contain all of the arguments required for the event.</span>
+<span class="sd"> 2. You need to add instructions for parsing this new event in the parser.py module, specifcally in the parse_events method.</span>
+<span class="sd"> 3. In the scheduler module, specifically in the schedule_events method, you need to add an if statement for the new event, and schedule a call to the correct funtion that should handle the event.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">from</span> <span class="nn">core.emulator.emudata</span> <span class="k">import</span> <span class="n">LinkOptions</span>
+
+
+<div class="viewcode-block" id="TimedEvent"><a class="viewcode-back" href="../index.html#events.TimedEvent">[docs]</a><span class="k">class</span> <span class="nc">TimedEvent</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Base class for Scheduler events.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execution_delay</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execution_delay</span> <span class="o">=</span> <span class="n">execution_delay</span> <span class="c1"># The time, after the start of the scheduler of when the event should be executed.</span>
+
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Conveniece method that retrieves the InterLink object belonging to the link between the two specified node names</span>
+
+<span class="sd">        :param first_node_name: the name of the first node that is part of the link</span>
+<span class="sd">        :type first_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that is part of the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :return: the InterLink object that is associated with the link between the two provided node names</span>
+<span class="sd">        :rtype: TopologyConfigurator.InterLink</span>
+<span class="sd">        &#39;&#39;&#39;</span></div>
+
+<div class="viewcode-block" id="OpenTermEvent"><a class="viewcode-back" href="../index.html#events.OpenTermEvent">[docs]</a><span class="k">class</span> <span class="nc">OpenTermEvent</span><span class="p">(</span><span class="n">TimedEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scheduler event that is used to launch a terminal from a virtual node</span>
+
+<span class="sd">        :param node_name: the name of the node from which the terminal is launched</span>
+<span class="sd">        :type node_name: str</span>
+
+<span class="sd">        :param shell: The path to the shell environment, defaults to /bin/bash</span>
+<span class="sd">        :type shell: str</span>
+
+<span class="sd">        :param args: a list of the arguments that are required for the execution</span>
+<span class="sd">        :type args: list</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">,</span> <span class="n">execution_delay</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="s2">&quot;/bin/bash&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">OpenTermEvent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">execution_delay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_name</span> <span class="o">=</span> <span class="n">node_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shell</span> <span class="o">=</span> <span class="n">shell</span> <span class="c1"># Defaults to the xterm environment, but this param can be used to specify another terminal env.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">shell</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="RunCMDEvent"><a class="viewcode-back" href="../index.html#events.RunCMDEvent">[docs]</a><span class="k">class</span> <span class="nc">RunCMDEvent</span><span class="p">(</span><span class="n">TimedEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Scheduler event that is used to execute a command on a virtual node.</span>
+
+<span class="sd">    :param node_name: the name of the node on which the command should be executed</span>
+<span class="sd">    :type node_name: str</span>
+
+<span class="sd">    :param command: the command that should be executed</span>
+<span class="sd">    :type command: str</span>
+
+<span class="sd">    :param wait: If wait is true, then program wait until execution is over, otherwise, it simply retunrs 0 and conttinues.</span>
+<span class="sd">    :type wait: boolean</span>
+
+<span class="sd">    :param args: a list of the arguments that are required for the execution</span>
+<span class="sd">    :type args: list</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">execution_delay</span><span class="p">,</span>  <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RunCMDEvent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">execution_delay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_name</span> <span class="o">=</span> <span class="n">node_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="n">command</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait</span> <span class="o">=</span> <span class="n">wait</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="LinkEvent"><a class="viewcode-back" href="../index.html#events.LinkEvent">[docs]</a><span class="k">class</span> <span class="nc">LinkEvent</span><span class="p">(</span><span class="n">TimedEvent</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        LinkEvents are used to control the connections quality of different links</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first_node_name</span><span class="p">,</span> <span class="n">second_node_name</span><span class="p">,</span> <span class="n">execution_delay</span><span class="p">,</span> <span class="n">link_params</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Scheduler event that is used to fluctuate the connection quality of a link</span>
+<span class="sd">        :param first_node_name: the name of the first node that constitutes the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :param second_node_name: the name of the second node that constitutes the link</span>
+<span class="sd">        :type second_node_name: str</span>
+
+<span class="sd">        :param link_params:  a dictionary of parameters and values derived from the YaML file</span>
+<span class="sd">        :type link_params: dict</span>
+
+<span class="sd">        :param linkOptions: class LinkOption representation of the link_params</span>
+<span class="sd">        :type linkOptions: core.emulator.emudata.LinkOptions</span>
+
+<span class="sd">        :param args: a list of the arguments that are required for the execution</span>
+<span class="sd">        :type args: list</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">LinkEvent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">execution_delay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_node_name</span> <span class="o">=</span> <span class="n">first_node_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">second_node_name</span> <span class="o">=</span> <span class="n">second_node_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link_params</span> <span class="o">=</span> <span class="n">link_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linkOptions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_LinkOptions</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">linkOptions</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="LinkEvent.get_LinkOptions"><a class="viewcode-back" href="../index.html#events.LinkEvent.get_LinkOptions">[docs]</a>    <span class="k">def</span> <span class="nf">get_LinkOptions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;This method is used derive new LinkOptions() from the LinkEvent object.</span>
+<span class="sd">        LinkOptions are used by CORE to specify delays, bandwidth etc for a specific link.</span>
+
+<span class="sd">        :returns: linkOptions, a convenience object used by core to specify link values (delay, bandwidth, jitter etc.)</span>
+<span class="sd">        :rtype: core.emulator.emudata.LinkOptions</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">linkOptions</span> <span class="o">=</span> <span class="n">LinkOptions</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">link_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1">#print (&quot;param = {} -- Value = {}&quot;.format(param, value))</span>
+            <span class="n">parameter</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">newValue</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;session&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">newValue</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;delay&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">newValue</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;bandwidth&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">bandwidth</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span>
+            <span class="c1"># Packet Loss Rate</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;loss&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">per</span> <span class="o">=</span> <span class="n">newValue</span>
+            <span class="c1"># Packet duplication rate</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;duplication&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">dup</span> <span class="o">=</span> <span class="n">newValue</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">parameter</span> <span class="o">==</span> <span class="s2">&quot;jitter&quot;</span><span class="p">):</span>
+                <span class="n">linkOptions</span><span class="o">.</span><span class="n">jitter</span> <span class="o">=</span> <span class="n">newValue</span>
+            <span class="c1"># elif (parameter == &quot;mer&quot;):</span>
+            <span class="c1">#     linkOptions.mer = newValue</span>
+            <span class="c1"># elif (parameter == &quot;burst&quot;):</span>
+            <span class="c1">#     linkOptions.burst = newValue</span>
+            <span class="c1"># elif (parameter == &quot;mburst&quot;):</span>
+            <span class="c1">#     linkOptions.mburst = newValue</span>
+            <span class="c1"># elif (parameter == &quot;gui_attributes&quot;):</span>
+            <span class="c1">#     linkOptions.gui_attributes = newValue</span>
+            <span class="c1"># elif (parameter == &quot;unidirectional&quot;):</span>
+            <span class="c1">#     linkOptions.unidirectional = newValue</span>
+            <span class="c1"># elif (parameter == &quot;emulation_id&quot;):</span>
+            <span class="c1">#     linkOptions.emulation_id = newValue</span>
+            <span class="c1"># elif (parameter == &quot;network_id&quot;):</span>
+            <span class="c1">#     linkOptions.network_id = newValue</span>
+            <span class="c1"># elif (parameter == &quot;key&quot;):</span>
+            <span class="c1">#     linkOptions.key = newValue</span>
+            <span class="c1"># elif (parameter == &quot;opaque&quot;):</span>
+            <span class="c1">#     linkOptions.opaque = newValue</span>
+
+        <span class="k">return</span> <span class="n">linkOptions</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">        Event Type = LinkUpdate</span>
+<span class="s1">        first node_name = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">        second_node_name = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">        execution_delay = </span><span class="si">%s</span><span class="s1"></span>
+<span class="s1">        New Link Parameters:</span>
+<span class="s1">        &#39;&#39;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_node_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_node_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">execution_delay</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">link_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">result</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,581 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to Network Emulator - RA’s documentation! &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-network-emulator-ra-s-documentation">
+<h1>Welcome to Network Emulator - RA’s documentation!<a class="headerlink" href="#welcome-to-network-emulator-ra-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="module-__init__">
+<span id="main"></span><h1>main<a class="headerlink" href="#module-__init__" title="Permalink to this headline">¶</a></h1>
+<p>This is the entry point into the network emulator</p>
+<dl class="function">
+<dt id="__init__.coreSession">
+<code class="sig-prename descclassname">__init__.</code><code class="sig-name descname">coreSession</code><span class="sig-paren">(</span><em class="sig-param">topology</em>, <em class="sig-param">scheduler</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/__init__.html#coreSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#__init__.coreSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is where the emulation sesseion is actually started. This is run on the seperate thread. See main() below.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="__init__.main">
+<code class="sig-prename descclassname">__init__.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/__init__.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#__init__.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the entry point into the program. The topology, scheduler and API are all instantiated and started here.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-api">
+<span id="api"></span><h1>API<a class="headerlink" href="#module-api" title="Permalink to this headline">¶</a></h1>
+<p>This is the RESTAPI that can be used to control the emulator at runtime. For a full documentation, refer to <a class="reference external" href="https://documenter.getpostman.com/view/8436185/SVfRtnYd?version=latest">https://documenter.getpostman.com/view/8436185/SVfRtnYd?version=latest</a></p>
+<p>In order to expand this API, you can simply add new resources and define the HTTP methods on them. See some of the examples below.</p>
+<dl class="class">
+<dt id="api.API">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">API</code><span class="sig-paren">(</span><em class="sig-param">topology=None</em>, <em class="sig-param">scheduler=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/api.html#API"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.API" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class is responsible for setting up the API</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Home">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Home</code><a class="reference internal" href="_modules/api.html#Home"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Home" title="Permalink to this definition">¶</a></dt>
+<dd><p>The hope path of the API</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Job">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Job</code><a class="reference internal" href="_modules/api.html#Job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Job" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents a scheduler job resource</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Link">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Link</code><a class="reference internal" href="_modules/api.html#Link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Link" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents the Link resource</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Node">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Node</code><a class="reference internal" href="_modules/api.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents the Node resource</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.NodeTerm">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">NodeTerm</code><a class="reference internal" href="_modules/api.html#NodeTerm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.NodeTerm" title="Permalink to this definition">¶</a></dt>
+<dd><p>launch terminal for node</p>
+<dl class="method">
+<dt id="api.NodeTerm.put">
+<code class="sig-name descname">put</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/api.html#NodeTerm.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.NodeTerm.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run command on a node</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Scheduler">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Scheduler</code><a class="reference internal" href="_modules/api.html#Scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents the Scheduler resource</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="api.Topology">
+<em class="property">class </em><code class="sig-prename descclassname">api.</code><code class="sig-name descname">Topology</code><a class="reference internal" href="_modules/api.html#Topology"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.Topology" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents the Topology resource</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-scheduler">
+<span id="scheduler"></span><h1>Scheduler<a class="headerlink" href="#module-scheduler" title="Permalink to this headline">¶</a></h1>
+<p>This module contains th elogic for the scheduler
+The scheduler used is the APScheduler</p>
+<dl class="class">
+<dt id="scheduler.Scheduler">
+<em class="property">class </em><code class="sig-prename descclassname">scheduler.</code><code class="sig-name descname">Scheduler</code><span class="sig-paren">(</span><em class="sig-param">events=None</em>, <em class="sig-param">topology=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Our implementation of the scheduler intenrally initiaties an APScheduler.BackgroundScheduler</p>
+<dl class="method">
+<dt id="scheduler.Scheduler.format_job">
+<code class="sig-name descname">format_job</code><span class="sig-paren">(</span><em class="sig-param">job_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.format_job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.format_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a job so that it can be shown to the user when an API call is made</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="scheduler.Scheduler.format_jobs">
+<code class="sig-name descname">format_jobs</code><span class="sig-paren">(</span><em class="sig-param">job_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.format_jobs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.format_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats all of the jobs so that they can be shown to the user when an API call is made</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="scheduler.Scheduler.get_jobs">
+<code class="sig-name descname">get_jobs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.get_jobs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.get_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the jobs scheduled for execution</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="scheduler.Scheduler.print_jobs">
+<code class="sig-name descname">print_jobs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.print_jobs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.print_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints a formatted version of the jobs scheduled for execution</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="scheduler.Scheduler.schedule_events">
+<code class="sig-name descname">schedule_events</code><span class="sig-paren">(</span><em class="sig-param">events</em>, <em class="sig-param">topology</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.schedule_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.schedule_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is used to schedule the different events. Since the APScheduler takes a datetime object for the execution time, we need to convert the event times to dates.
+We do this by taking a reference of the start_time and then calling the method _calculate_new_time which creates a time delta object between the events execution time and the start_time
+of the scheduler. This time deta object can then be converted to an ISO datetime object.</p>
+<p>To add more events to the scheduler, you need to define a class for the new events in the events.py module, add the logic to the parser and then add an if statement in this method,
+along with the required logic for execution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="scheduler.Scheduler.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/scheduler.html#Scheduler.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#scheduler.Scheduler.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stars the schedulers and sets the is_started flag to true.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-events">
+<span id="events"></span><h1>Events<a class="headerlink" href="#module-events" title="Permalink to this headline">¶</a></h1>
+<p>In this module, the different events that the scheduler can take are defined.</p>
+<p>When you want to add an event, there are 3 parts of the code that you mainly have to modify.
+1. Define a class for the event here. The new event should inherit from the TimedEvent class and should contain all of the arguments required for the event.
+2. You need to add instructions for parsing this new event in the parser.py module, specifcally in the parse_events method.
+3. In the scheduler module, specifically in the schedule_events method, you need to add an if statement for the new event, and schedule a call to the correct funtion that should handle the event.</p>
+<dl class="class">
+<dt id="events.LinkEvent">
+<em class="property">class </em><code class="sig-prename descclassname">events.</code><code class="sig-name descname">LinkEvent</code><span class="sig-paren">(</span><em class="sig-param">first_node_name</em>, <em class="sig-param">second_node_name</em>, <em class="sig-param">execution_delay</em>, <em class="sig-param">link_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/events.html#LinkEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#events.LinkEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>LinkEvents are used to control the connections quality of different links</p>
+<dl class="method">
+<dt id="events.LinkEvent.get_LinkOptions">
+<code class="sig-name descname">get_LinkOptions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/events.html#LinkEvent.get_LinkOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#events.LinkEvent.get_LinkOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is used derive new LinkOptions() from the LinkEvent object.
+LinkOptions are used by CORE to specify delays, bandwidth etc for a specific link.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>linkOptions, a convenience object used by core to specify link values (delay, bandwidth, jitter etc.)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>core.emulator.emudata.LinkOptions</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="events.OpenTermEvent">
+<em class="property">class </em><code class="sig-prename descclassname">events.</code><code class="sig-name descname">OpenTermEvent</code><span class="sig-paren">(</span><em class="sig-param">node_name</em>, <em class="sig-param">execution_delay</em>, <em class="sig-param">shell='/bin/bash'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/events.html#OpenTermEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#events.OpenTermEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scheduler event that is used to launch a terminal from a virtual node</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> (<em>str</em>) – the name of the node from which the terminal is launched</p></li>
+<li><p><strong>shell</strong> (<em>str</em>) – The path to the shell environment, defaults to /bin/bash</p></li>
+<li><p><strong>args</strong> (<em>list</em>) – a list of the arguments that are required for the execution</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="events.RunCMDEvent">
+<em class="property">class </em><code class="sig-prename descclassname">events.</code><code class="sig-name descname">RunCMDEvent</code><span class="sig-paren">(</span><em class="sig-param">node_name</em>, <em class="sig-param">command</em>, <em class="sig-param">execution_delay</em>, <em class="sig-param">wait=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/events.html#RunCMDEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#events.RunCMDEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scheduler event that is used to execute a command on a virtual node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> (<em>str</em>) – the name of the node on which the command should be executed</p></li>
+<li><p><strong>command</strong> (<em>str</em>) – the command that should be executed</p></li>
+<li><p><strong>wait</strong> (<em>boolean</em>) – If wait is true, then program wait until execution is over, otherwise, it simply retunrs 0 and conttinues.</p></li>
+<li><p><strong>args</strong> (<em>list</em>) – a list of the arguments that are required for the execution</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="events.TimedEvent">
+<em class="property">class </em><code class="sig-prename descclassname">events.</code><code class="sig-name descname">TimedEvent</code><span class="sig-paren">(</span><em class="sig-param">execution_delay=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/events.html#TimedEvent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#events.TimedEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for Scheduler events.</p>
+<dl class="attribute">
+<dt id="events.TimedEvent.execution_delay">
+<code class="sig-name descname">execution_delay</code><em class="property"> = None</em><a class="headerlink" href="#events.TimedEvent.execution_delay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conveniece method that retrieves the InterLink object belonging to the link between the two specified node names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_node_name</strong> (<em>str</em>) – the name of the first node that is part of the link</p></li>
+<li><p><strong>second_node_name</strong> (<em>str</em>) – the name of the second node that is part of the link</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the InterLink object that is associated with the link between the two provided node names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterLink" title="TopologyConfigurator.InterLink">TopologyConfigurator.InterLink</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-TopologyConfigurator">
+<span id="topology-configurator"></span><h1>Topology Configurator<a class="headerlink" href="#module-TopologyConfigurator" title="Permalink to this headline">¶</a></h1>
+<p>This module is the main control point for the emulator.</p>
+<p>The nodes, links and Topology are all instantiated here as well as the underlying network emulation.</p>
+<p>The Topology class is the interface that can be used to add, remove and modify nodes and links.
+Among other things, the update_link method is used to fluctuate the connection quality of a link.</p>
+<dl class="class">
+<dt id="TopologyConfigurator.InterLink">
+<em class="property">class </em><code class="sig-prename descclassname">TopologyConfigurator.</code><code class="sig-name descname">InterLink</code><span class="sig-paren">(</span><em class="sig-param">first_node</em>, <em class="sig-param">second_node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterLink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterLink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container Class for parsed “links” from config file</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="TopologyConfigurator.InterNode">
+<em class="property">class </em><code class="sig-prename descclassname">TopologyConfigurator.</code><code class="sig-name descname">InterNode</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">type</em>, <em class="sig-param">interface=None</em>, <em class="sig-param">ip_address=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container Class for parsed “nodes” from config file</p>
+<p>Also initializes virtual ethernet interfaces incase the node is physical, and store the interfaces in the class</p>
+<dl class="method">
+<dt id="TopologyConfigurator.InterNode.add_node_to_topology">
+<code class="sig-name descname">add_node_to_topology</code><span class="sig-paren">(</span><em class="sig-param">topology</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode.add_node_to_topology"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode.add_node_to_topology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds this node to the provided topology, and updates the necessary internal information</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.InterNode.get_data">
+<code class="sig-name descname">get_data</code><span class="sig-paren">(</span><em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode.get_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method used by api to get data and display them</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.InterNode.icmd">
+<code class="sig-name descname">icmd</code><span class="sig-paren">(</span><em class="sig-param">command</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode.icmd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode.icmd" title="Permalink to this definition">¶</a></dt>
+<dd><p>runs command from the node and displays result in the main console
+return the status code of the execution</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.InterNode.init_veth">
+<code class="sig-name descname">init_veth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode.init_veth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode.init_veth" title="Permalink to this definition">¶</a></dt>
+<dd><p>in case of a physical node, create the necessary virtual ethernet devices and bridges, to achieve connectivity between the physical and virtual nodes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.InterNode.shutdown">
+<code class="sig-name descname">shutdown</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#InterNode.shutdown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.InterNode.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>deletes virtual interfaces at the end of a session</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="TopologyConfigurator.Topology">
+<em class="property">class </em><code class="sig-prename descclassname">TopologyConfigurator.</code><code class="sig-name descname">Topology</code><span class="sig-paren">(</span><em class="sig-param">yml_nodes=None</em>, <em class="sig-param">yml_links=None</em>, <em class="sig-param">netmask='10.0.0.0/24'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class stores information about the current topology and offers interfaces for controlling it</p>
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.add_link">
+<code class="sig-name descname">add_link</code><span class="sig-paren">(</span><em class="sig-param">first_node_name</em>, <em class="sig-param">second_node_name</em>, <em class="sig-param">init=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.add_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.add_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates and adds a link between the two specified nodes to the emulator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_node_name</strong> (<em>str</em>) – the name of the first node that is part of the link</p></li>
+<li><p><strong>second_node_name</strong> (<em>str</em>) – the name of the second node that is part of the link</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the newly created InterLink object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterLink" title="TopologyConfigurator.InterLink">TopologyConfigurator.InterLink</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.add_node">
+<code class="sig-name descname">add_node</code><span class="sig-paren">(</span><em class="sig-param">node_name</em>, <em class="sig-param">node_type</em>, <em class="sig-param">node_interface=None</em>, <em class="sig-param">node_ip=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.add_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.add_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds a node to the emulator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> (<em>str</em>) – the name of the name that needs to be created</p></li>
+<li><p><strong>node_type</strong> (<em>str</em>) – the type of the node to be created. Possible types {rj45, switch, hub, host}</p></li>
+<li><p><strong>node_interface</strong> (<em>str</em><em>, </em><em>optional</em>) – the name of the physical interface that needs to be associated with this node. Only required incase of an RJ45 node, defaults to None</p></li>
+<li><p><strong>node_ip</strong> (<em>str</em><em>, </em><em>optional</em>) – the IP address that will be assigne to the node, only required incase of an RJ45 node, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>returns the node that was created and added the emulator</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterNode" title="TopologyConfigurator.InterNode">TopologyConfigurator.InterNode</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.delete_link">
+<code class="sig-name descname">delete_link</code><span class="sig-paren">(</span><em class="sig-param">first_node_name</em>, <em class="sig-param">second_node_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.delete_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.delete_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the link between the two specified nodes if it exists</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_node_name</strong> (<em>str</em>) – the name of the first node that is part of the link</p></li>
+<li><p><strong>second_node_name</strong> (<em>str</em>) – the name of the second node that is part of the link</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the deleted InterLink object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterLink" title="TopologyConfigurator.InterLink">TopologyConfigurator.InterLink</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.delete_node">
+<code class="sig-name descname">delete_node</code><span class="sig-paren">(</span><em class="sig-param">node_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.delete_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.delete_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the node with the specified name from the emulator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>node_name</strong> (<em>str</em>) – the name of the node to be deleted</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dictionary containing the data of the node that was deleted, this is used by the API.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict(str)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.get_data">
+<code class="sig-name descname">get_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.get_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates and returns a dictionary containing all of the topology’s important data, such as the nodes and the links.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dictionary containing information about the topology. This is mainly used by the API.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.get_link_by_node_names">
+<code class="sig-name descname">get_link_by_node_names</code><span class="sig-paren">(</span><em class="sig-param">first_node_name</em>, <em class="sig-param">second_node_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.get_link_by_node_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.get_link_by_node_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conveniece method that retrieves the InterLink object belonging to the link between the two specified node names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_node_name</strong> (<em>str</em>) – the name of the first node that is part of the link</p></li>
+<li><p><strong>second_node_name</strong> (<em>str</em>) – the name of the second node that is part of the link</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the InterLink object that is associated with the link between the two provided node names</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterLink" title="TopologyConfigurator.InterLink">TopologyConfigurator.InterLink</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.get_node_by_name">
+<code class="sig-name descname">get_node_by_name</code><span class="sig-paren">(</span><em class="sig-param">nodeName</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.get_node_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.get_node_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conveniece method that retrieves the InterNode object belonging to the node with the provided name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nodeName</strong> (<em>str</em>) – the name of the node that should be retrieved</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>InterNode object with the specified name</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#TopologyConfigurator.InterNode" title="TopologyConfigurator.InterNode">TopologyConfigurator.InterNode</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.shutdown">
+<code class="sig-name descname">shutdown</code><span class="sig-paren">(</span><em class="sig-param">hard=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.shutdown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shutsdown the topology, kills any underlying processes and removes any virtual interfaces and bridges that were created
+if hard is set to True, a hard shutdown is performed. All virtual devices created by the emulator are removed and all processes are killed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="TopologyConfigurator.Topology.update_link">
+<code class="sig-name descname">update_link</code><span class="sig-paren">(</span><em class="sig-param">first_node_name</em>, <em class="sig-param">second_node_name</em>, <em class="sig-param">link_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/TopologyConfigurator.html#Topology.update_link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#TopologyConfigurator.Topology.update_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the link options between the two specified nodes with the provided link_options to the emulator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>first_node_name</strong> (<em>str</em>) – the name of the first node that is part of the link</p></li>
+<li><p><strong>second_node_name</strong> (<em>str</em>) – the name of the second node that is part of the link</p></li>
+<li><p><strong>link_options</strong> (<em>core.emulator.emudata.LinkOptions</em><em>, </em><em>optional</em>) – The link_options to update the link with. CORE provides a convenience LinkOptions class for this. Defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if the link was updated succesfully, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-cleanup">
+<span id="cleanup"></span><h1>Cleanup<a class="headerlink" href="#module-cleanup" title="Permalink to this headline">¶</a></h1>
+<p>This script is called when the emulation is interrupted. It cleansup any interfaces created by the program.</p>
+</div>
+<div class="section" id="module-config">
+<span id="config"></span><h1>Config<a class="headerlink" href="#module-config" title="Permalink to this headline">¶</a></h1>
+<p>This is a simple script that can be used to create event configuration files for the scheduler. Refer to the console help (python config.py -h).</p>
+<p>In a nutshell, you can use this script to define ‘n’ events, the node or link the events belong to, the parameters you want to influence, the start value of the parameters,
+a discrete increment, as well as the time of the first events and the time interval at which the events should occur.</p>
+<p>This is only a simple script as mentioned, but it can be used for testing purposes.</p>
+</div>
+<div class="section" id="module-utils">
+<span id="utils"></span><h1>Utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h1>
+<p>This modules contains some utility methods that are used all over the program</p>
+<dl class="function">
+<dt id="utils.convert_time_to_seconds">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">convert_time_to_seconds</code><span class="sig-paren">(</span><em class="sig-param">timeValue</em>, <em class="sig-param">timeUnit</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#convert_time_to_seconds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.convert_time_to_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts time values (for the queue) to seconds (1 ms will become 0.001 second for example)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeValue</strong> – The actual time value in the specified unit</p></li>
+<li><p><strong>timeUnit</strong> – The unit of time (ns, us, ms, min, hr)
+(default is seconds)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>timeInSeconds, the time value converted to seconds</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.getCoreNodeType">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">getCoreNodeType</code><span class="sig-paren">(</span><em class="sig-param">type_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#getCoreNodeType"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.getCoreNodeType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get node types as “understood” by the CORE emulator</p>
+<p>In other words, translate types from our simple language to the CORE language</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_LinkOptions">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">get_LinkOptions</code><span class="sig-paren">(</span><em class="sig-param">link_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_LinkOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_LinkOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class is used derive new LinkOptions() from the LinkEvent object.
+LinkOptions are used by CORE to specify delays, bandwidth etc for a specific link.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>linkOptions, a convenience object used by core to specify link values (delay, bandwidth, jitter etc.)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>LinkOptions</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="utils.get_cmd_command">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">get_cmd_command</code><span class="sig-paren">(</span><em class="sig-param">command</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utils.html#get_cmd_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#utils.get_cmd_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>takes a string of a terminal command, and returns the individual words as a list</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

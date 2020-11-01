@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>__init__ &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for __init__</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">	This is the entry point into the network emulator</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Timer</span><span class="p">,</span> <span class="n">Thread</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="k">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">atexit</span>
+
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="kn">import</span> <span class="nn">core</span>
+<span class="kn">from</span> <span class="nn">core</span> <span class="k">import</span> <span class="n">load_logging_config</span>
+<span class="kn">from</span> <span class="nn">core.emulator.coreemu</span> <span class="k">import</span> <span class="n">CoreEmu</span>
+<span class="kn">from</span> <span class="nn">core.emulator.emudata</span> <span class="k">import</span> <span class="n">IpPrefixes</span><span class="p">,</span> <span class="n">NodeOptions</span><span class="p">,</span> <span class="n">LinkOptions</span><span class="p">,</span> <span class="n">InterfaceData</span>
+<span class="kn">from</span> <span class="nn">core.emulator.enumerations</span> <span class="k">import</span> <span class="n">NodeTypes</span><span class="p">,</span> <span class="n">EventTypes</span><span class="p">,</span> <span class="n">LinkTypes</span>
+
+<span class="kn">from</span> <span class="nn">api</span> <span class="k">import</span> <span class="n">API</span>
+<span class="kn">from</span> <span class="nn">TopologyConfigurator</span> <span class="k">import</span> <span class="n">Topology</span>
+<span class="kn">from</span> <span class="nn">scheduler</span> <span class="k">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">parser</span> <span class="k">import</span> <span class="n">Parser</span>
+<span class="kn">import</span> <span class="nn">utils</span>
+
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="coreSession"><a class="viewcode-back" href="../index.html#__init__.coreSession">[docs]</a><span class="k">def</span> <span class="nf">coreSession</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">):</span>
+	<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		This is where the emulation sesseion is actually started. This is run on the seperate thread. See main() below.</span>
+
+<span class="sd">	&#39;&#39;&#39;</span>
+	<span class="n">prefixes</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">prefixes</span>
+	<span class="n">coreemu</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">coreemu</span>
+	<span class="n">session</span> <span class="o">=</span> <span class="n">topology</span><span class="o">.</span><span class="n">session</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="n">topology</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">run_api</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">):</span>
+	<span class="c1"># starts the API</span>
+	<span class="c1"># The API takes the topology and scheduler as an input, in order to be able to modify them.</span>
+	<span class="n">api</span> <span class="o">=</span> <span class="n">API</span><span class="p">(</span><span class="n">topology</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">)</span>
+	<span class="n">api</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../index.html#__init__.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+	<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">	This is the entry point into the program. The topology, scheduler and API are all instantiated and started here.</span>
+<span class="sd">	&#39;&#39;&#39;</span>
+	<span class="c1"># Parse commandline arguments</span>
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;This is the entry point into the emulator.</span>
+<span class="s1">	You can either intitalize an empty topology, or use a topology configuration file.</span>
+<span class="s1">	Furthermore, if you wish, you can provide an event configuration file to schedule the execution of certain jobs at certain times.&#39;&#39;&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--topology&#39;</span><span class="p">,</span> <span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the topology configuration file (optional)&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--events&#39;</span><span class="p">,</span> <span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the event configuration file (optional)&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--start-scheduler&#39;</span><span class="p">,</span> <span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;1 for True (defaults), 0 for False  -  Determines whether the scheduler is immediately started with the program or not. If not, you can start it later from the API. Time zero would be right when the scheduler is started.&#39;</span><span class="p">)</span>
+	<span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+	<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+	<span class="n">topologyPath</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">topology</span>
+	<span class="n">eventsPath</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">events</span>
+
+	<span class="n">parser</span> <span class="o">=</span> <span class="n">Parser</span><span class="p">()</span>
+	<span class="c1"># topology config is provided - Instantiate this topology</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">topologyPath</span><span class="p">):</span>
+		<span class="n">yml_nodes</span><span class="p">,</span> <span class="n">yml_links</span><span class="p">,</span> <span class="n">netmask</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_topology</span><span class="p">(</span><span class="n">topologyPath</span><span class="p">)</span>
+		<span class="c1"># netmask is provided - Set custom netmask</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">netmask</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">):</span>
+			<span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="p">(</span><span class="n">yml_nodes</span><span class="p">,</span> <span class="n">yml_links</span><span class="p">,</span> <span class="n">netmask</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c1"># Otherwise, use default netmask (10.0.0.0/24)</span>
+			<span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="p">(</span><span class="n">yml_nodes</span><span class="p">,</span> <span class="n">yml_links</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="c1"># empty topology (no config file)</span>
+		<span class="n">topology</span> <span class="o">=</span> <span class="n">Topology</span><span class="p">()</span>
+
+	<span class="c1"># clean up tolopogy when script exists</span>
+	<span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">topology</span><span class="o">.</span><span class="n">shutdown</span><span class="p">,</span> <span class="n">hard</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="n">events</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="n">scheduler</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="c1"># If the events command line argument is provided, this block is executed</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">eventsPath</span><span class="p">):</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;events are available&quot;</span><span class="p">)</span>
+		<span class="n">events</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_events</span><span class="p">(</span><span class="n">eventsPath</span><span class="p">)</span>	<span class="c1"># LinkEvents parsed from file</span>
+		<span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">topology</span><span class="p">)</span>
+		<span class="c1"># If the flag to start the scheduler on the command line is set to True, then the scheduler is immediately started, otherwise, it isn&#39;t.</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_scheduler</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+			<span class="n">scheduler</span><span class="o">.</span><span class="n">schedule_events</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">topology</span><span class="p">)</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">start schedule = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">start_scheduler</span><span class="p">))</span>
+			<span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+		<span class="c1"># Else, you need to start it from the API.</span>
+
+	<span class="c1"># Start the the CORE session on a seperate thread.</span>
+	<span class="n">coreSessionThread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">coreSession</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">coreSession</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">topology</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">])</span>
+	<span class="n">api_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">run_api</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;api_thread&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">topology</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">])</span><span class="c1">#, &#39;port&#39;: 5001}) # Custom port for the API, default is 5000</span>
+	<span class="n">api_thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="n">api_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+	<span class="n">coreSessionThread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+	<span class="k">try</span><span class="p">:</span>
+		<span class="n">coreSessionThread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+	<span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+		<span class="n">topology</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">hard</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+	<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">setup finished</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+	<span class="c1"># Infinite main loop</span>
+	<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span></div>
+
+	<span class="c1"># shutdown</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;__main__&quot;</span><span class="p">,</span> <span class="s2">&quot;__builtin__&quot;</span><span class="p">]:</span>
+	<span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

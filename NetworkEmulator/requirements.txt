@@ -1,0 +1,15 @@
+# automake pkg-config gcc libev-dev bridge-utils ebtables python-dev python-setuptools tk libtk-img
+#matplotlib==2.2.4
+Flask==1.1.1
+APScheduler==3.6.1
+Flask_RESTful==0.3.7
+requests==2.22.0
+#numpy==1.16.4
+#core==5.3.1
+#pingparsing==0.18.1
+PyYAML==5.1.2
+future==0.17.1
+lxml==4.3.3
+#futures==3.3.0
+#docker_py==1.10.6
+protobuf==3.9.1

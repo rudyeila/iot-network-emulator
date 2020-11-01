@@ -1,0 +1,79 @@
+event:
+  parameters:
+    link_params:
+      bandwidth: 8000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 0.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 40000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 10.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 80000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 20.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 200000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 30.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 400000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 40.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 800000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 50.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 1600000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 60.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      bandwidth: 2048000000
+      delay: 1
+    node1: left
+    node2: right
+  time: 70.0 seconds
+  type: LinkUpdate

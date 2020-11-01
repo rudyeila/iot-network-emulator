@@ -1,0 +1,21 @@
+topology:
+  nodes:
+    - name: left
+      type: rj45
+      interface: enp0s8
+      ip: 10.0.0.20
+    - name: right
+      type: rj45
+      interface: enp0s10
+      ip: 10.0.0.21
+    - name: broker
+      type: host
+    - name: switch
+      type: switch
+  links:
+    - node1: left
+      node2: switch
+    - node1: right
+      node2: switch
+    - node1: broker
+      node2: switch

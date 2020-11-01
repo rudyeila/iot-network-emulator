@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>api &#8212; Network Emulator - RA 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for api</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This is the RESTAPI that can be used to control the emulator at runtime. For a full documentation, refer to https://documenter.getpostman.com/view/8436185/SVfRtnYd?version=latest</span>
+
+<span class="sd">In order to expand this API, you can simply add new resources and define the HTTP methods on them. See some of the examples below. </span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">request</span>
+<span class="kn">from</span> <span class="nn">flask_restful</span> <span class="k">import</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">Api</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">get_LinkOptions</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="c1">#from globals import topology</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">html</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>  <span class="c1"># Also allows you to set your own &lt;head&gt;&lt;/head&gt; etc</span>
+   <span class="k">return</span> <span class="s1">&#39;&lt;html&gt;&lt;head&gt;Emulator API&lt;/head&gt;&lt;body&gt;&#39;</span> <span class="o">+</span> <span class="n">content</span> <span class="o">+</span> <span class="s1">&#39;&lt;/body&gt;&lt;/html&gt;&#39;</span>
+
+<span class="k">def</span> <span class="nf">help_text</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">&lt;p1&gt;</span>
+<span class="s1">This is a short documentation for using the API.</span>
+
+<span class="s1">For a full documentation, refer to: &lt;a href=&quot;https://documenter.getpostman.com/view/8436185/SVfRtnYd?version=latest&quot;&gt;</span>
+
+<span class="s1">You are able to access the following resources:</span>
+
+<span class="s1">Topology</span>
+<span class="s1">Nodes</span>
+<span class="s1">Links</span>
+<span class="s1">NodeTerminals</span>
+<span class="s1">Scheduler</span>
+<span class="s1">Jobs</span>
+
+<span class="s1">We will take a look at the possible commands for each resource.</span>
+
+<span class="s1">&lt;h1&gt;Topology:&lt;/h1&gt;</span>
+<span class="s1">get - http://localhost:5000/topology/ - Returns a dictionary containing the nodes and the link contained within the topology</span>
+
+<span class="s1">&lt;h1&gt;Nodes:&lt;/h1&gt;</span>
+<span class="s1">get - http://localhost:5000/topology/nodes - Returns a dictionary of the current nodes within the topology</span>
+<span class="s1">get - http://localhost:5000/topology/nodes?name=subscriber - Parameters: name=&lt;str:name&gt; - returns node with specified name</span>
+
+<span class="s1">post - http://localhost:5000/topology/nodes?name=newnode&amp;type=host - Parameters: name=&lt;str:name&gt;, type=&lt;str:nodetype&gt; - adds specified node to topology</span>
+
+<span class="s1">delete - http://localhost:5000/topology/nodes?name=subscriber - Parameters: [name] - Deletes node with specified name from topology</span>
+
+<span class="s1">&lt;h2&gt;Node Terminals&lt;/h2&gt;</span>
+<span class="s1">get - http://localhost:5000/topology/nodes/term?name=subscriber - parameters: name=NodeName - Launches a terminal from the specified node. You need to have Xterm installed.</span>
+
+
+<span class="s1">&lt;h1&gt;Links:&lt;/h1&gt;</span>
+<span class="s1">get - http://localhost:5000/topology/links - Returns a dictionary of the current nodes within the topology</span>
+<span class="s1">get - http://localhost:5000/topology/links?node1=name1&amp;node2=name2 -Parameters [node1=&lt;str:name&gt;, node2=&lt;str:name&gt;] - Returns the link between the provided node1 and node2, if it exists.</span>
+
+<span class="s1">post - http://localhost:5000/topology/links?node1=name1&amp;node2=name2 -Parameters [node1=&lt;str:name&gt;, node2=&lt;str:name&gt;] - Creates a new link between the provided node names (the two nodes must already exist in the topology)</span>
+
+<span class="s1">put - http://localhost:5000/topology/links?node1=name1&amp;node2=name2&amp;delay=10000&amp;bandwidth=1024&amp;loss=10&amp;dup=2&amp;jitter=15</span>
+<span class="s1">Parameters [</span>
+<span class="s1">node1 = name of the first node of the link</span>
+<span class="s1">node2 = name of the second node of the link</span>
+<span class="s1">delay = delay to add in microseconds</span>
+<span class="s1">bandwidth = new limited bandidth in bits per second</span>
+<span class="s1">loss = packet loss rate in %</span>
+<span class="s1">dup = packet duplication rate in %</span>
+<span class="s1">jitter = new jitter value</span>
+<span class="s1">]</span>
+
+<span class="s1">delete - http://localhost:5000/topology/links?node1=name1&amp;node2=name2 -Parameters [node1=&lt;str:name&gt;, node2=&lt;str:name&gt;] - Deletes the link between the provided node1 and node2, if it exists.</span>
+
+
+
+<span class="s1">&lt;h1&gt;Scheduler&lt;/h1&gt;</span>
+<span class="s1">get - http://localhost:5000/scheduler - returns a dictionary of currents jobs in the scheduler</span>
+
+<span class="s1">&lt;h2&gt;Jobs&lt;/h2&gt;</span>
+<span class="s1">get - http://localhost:5000/scheduler/jobs?id=eas566eteassafsareg - Parameters: id=Job_id - Returns information regarding the provided scheduler job id. &lt;/p1&gt;</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="API"><a class="viewcode-back" href="../index.html#api.API">[docs]</a><span class="k">class</span> <span class="nc">API</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class is responsible for setting up the API</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># The input parameters are a hack to pass the toplogy and scheduler from the main module to this one.</span>
+    <span class="c1"># I was having issues with the python import system and this ugly solution is what I came up with.</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topology</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scheduler</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1">#global topology, scheduler</span>
+        <span class="n">API</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">topology</span>
+        <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">scheduler</span>
+
+        <span class="c1">#topology = self.topology</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">scheduler</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No scheduler was passed to the API&quot;</span><span class="p">)</span>
+        <span class="c1">#self.topology = topology</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Home</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Topology</span><span class="p">,</span> <span class="s1">&#39;/topology&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="s1">&#39;/topology/nodes&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">NodeTerm</span><span class="p">,</span> <span class="s1">&#39;/topology/nodes/term&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Link</span><span class="p">,</span> <span class="s1">&#39;/topology/links&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">,</span> <span class="s1">&#39;/scheduler&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Job</span><span class="p">,</span> <span class="s1">&#39;/scheduler/jobs&#39;</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">set_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_topology</span><span class="p">):</span>
+        <span class="c1">#global topology</span>
+        <span class="n">API</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">new_topology</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reloader</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;debug = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">debug</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span> <span class="n">use_reloader</span><span class="o">=</span><span class="n">reloader</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Home"><a class="viewcode-back" href="../index.html#api.Home">[docs]</a><span class="k">class</span> <span class="nc">Home</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The hope path of the API</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">help_text</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">html</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="c1">#, 200</span></div>
+
+
+<div class="viewcode-block" id="Topology"><a class="viewcode-back" href="../index.html#api.Topology">[docs]</a><span class="k">class</span> <span class="nc">Topology</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class represents the Topology resource</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="mi">200</span></div>
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../index.html#api.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class represents the Node resource</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">name</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">interNodeObjects</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">get_data</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="mi">200</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;No node with name </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2"> was found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">404</span>
+
+        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mi">200</span>
+
+    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You need to specify a node name and type to create a new node&quot;</span><span class="p">},</span> <span class="mi">400</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;A node with name </span><span class="si">{}</span><span class="s2"> already exist. Nodes must have unique names.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">409</span>
+
+        <span class="k">return</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="mi">201</span>
+
+    <span class="c1"># def put(self):</span>
+    <span class="c1">#     name = request.args.get(&quot;name&quot;)</span>
+    <span class="c1">#     new_name=request.args.get(&quot;newname&quot;)</span>
+    <span class="c1">#     if (not name):</span>
+    <span class="c1">#         return {&quot;Error&quot;: &quot;You need to specify the name of the node to be updated&quot;}, 404</span>
+    <span class="c1">#     if (API.topology.get_node_by_name(name) != None):</span>
+    <span class="c1">#         return {&quot;Error&quot;: &quot;A node with name {} already exist. Nodes must have unique names.&quot;.format(name)}, 404</span>
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You did not provide the name of the node that has to be deleted.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">404</span>
+
+        <span class="n">delete</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">delete_node</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">delete</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">delete</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;No node with name </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2"> was found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">404</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> has been deleted&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">),</span>
+                <span class="s2">&quot;node&quot;</span><span class="p">:</span> <span class="n">delete</span><span class="p">},</span> <span class="mi">200</span></div>
+
+
+
+<div class="viewcode-block" id="Link"><a class="viewcode-back" href="../index.html#api.Link">[docs]</a><span class="k">class</span> <span class="nc">Link</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class represents the Link resource</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">node1_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node1&#39;</span><span class="p">)</span>
+        <span class="n">node2_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node2&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;node1 name </span><span class="si">{}</span><span class="s2"> node2 name  </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node1_name</span><span class="p">,</span> <span class="n">node2_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node1_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">node2_name</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">links</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">interLinkObjects</span>
+            <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">links</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">get_data</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="mi">200</span>
+        <span class="c1"># node1 = API.topology.get_node_by_name(node1_name)</span>
+        <span class="c1"># node2 = API.topology.get_node_by_name(node2_name)</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_link_by_node_names</span><span class="p">(</span><span class="n">node1_name</span><span class="p">,</span> <span class="n">node2_name</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="p">,</span> <span class="mi">200</span>
+
+    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">node1_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node1&#39;</span><span class="p">)</span>
+        <span class="n">node2_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node2&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node1_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">node2_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You must provide the names of the two nodes that you want to create a link between&quot;</span><span class="p">},</span> <span class="mi">404</span>
+
+        <span class="n">link</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">add_link</span><span class="p">(</span><span class="n">node1_name</span><span class="p">,</span> <span class="n">node2_name</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">link</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="mi">201</span>
+
+    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">node1_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node1&#39;</span><span class="p">)</span>
+        <span class="n">node2_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node2&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node1_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">node2_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You must provide the names of the two nodes that you want to create a link between&quot;</span><span class="p">},</span> <span class="mi">404</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">)</span>
+        <span class="n">bandwidth</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bandwidth&#39;</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;loss&#39;</span><span class="p">)</span>
+        <span class="n">dup</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dup&#39;</span><span class="p">)</span>
+        <span class="n">jitter</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;jitter&#39;</span><span class="p">)</span>
+
+        <span class="n">link_params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">link_params</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">delay</span>
+        <span class="n">link_params</span><span class="p">[</span><span class="s1">&#39;bandwidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bandwidth</span>
+        <span class="n">link_params</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loss</span>
+        <span class="n">link_params</span><span class="p">[</span><span class="s1">&#39;dup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dup</span>
+        <span class="n">link_params</span><span class="p">[</span><span class="s1">&#39;jitter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jitter</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;IN API:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">e</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">link_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> = </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;finish API&quot;</span><span class="p">)</span>
+        <span class="n">link_ops</span> <span class="o">=</span> <span class="n">get_LinkOptions</span><span class="p">(</span><span class="n">link_params</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">update_link</span><span class="p">(</span><span class="n">node1_name</span><span class="p">,</span> <span class="n">node2_name</span><span class="p">,</span> <span class="n">link_ops</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">status</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;Link could not be updated&quot;</span><span class="p">},</span> <span class="mi">400</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;Status&quot;</span><span class="p">:</span> <span class="s2">&quot;Link successfully updated&quot;</span><span class="p">,</span>
+             <span class="s2">&quot;Parameters&quot;</span><span class="p">:</span> <span class="n">link_params</span>
+        <span class="p">},</span> <span class="mi">200</span>
+
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">node1_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node1&#39;</span><span class="p">)</span>
+        <span class="n">node2_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;node2&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node1_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">node2_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You must provide the names of the two nodes that constitute the link you want to delete&quot;</span><span class="p">},</span> <span class="mi">404</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;Result&quot;</span><span class="p">:</span> <span class="s2">&quot;The following link was removed&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;link&quot;</span><span class="p">:</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">delete_link</span><span class="p">(</span><span class="n">node1_name</span><span class="p">,</span> <span class="n">node2_name</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+        <span class="p">},</span> <span class="mi">200</span></div>
+
+
+<div class="viewcode-block" id="NodeTerm"><a class="viewcode-back" href="../index.html#api.NodeTerm">[docs]</a><span class="k">class</span> <span class="nc">NodeTerm</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        launch terminal for node</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="c1">#shell = request.args.get(&quot;shell&quot;)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;You must provide the name of the name you want to launch the terminal from&quot;</span><span class="p">},</span> <span class="mi">400</span>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">node</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;No node with name </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2"> was found in the topology&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">404</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">open_term</span><span class="p">(</span><span class="n">sh</span><span class="o">=</span><span class="s2">&quot;/bin/bash&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;An error occured when launching terminal. Launching a terminal for a physical node is not supported. </span><span class="se">\n</span><span class="s2"> you have to manually launch the terminal from the host computer.&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)),</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span> <span class="mi">400</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;An error occured when launching terminal&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)),</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span> <span class="mi">400</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Message&quot;</span><span class="p">:</span> <span class="s2">&quot;Terminal successfully launched from node </span><span class="se">\&quot;</span><span class="si">{}</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)},</span> <span class="mi">200</span>
+
+
+<div class="viewcode-block" id="NodeTerm.put"><a class="viewcode-back" href="../index.html#api.NodeTerm.put">[docs]</a>    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Run command on a node &#39;&#39;&#39;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;command&quot;</span><span class="p">)</span>  <span class="c1"># plus &#39;+&#39; signs represent spaces in command</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+        <span class="n">wait</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;wait&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">wait</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wait</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">get_node_by_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">run_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">wait</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Body&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">},</span> <span class="mi">200</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Output&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">},</span> <span class="mi">200</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;Error&quot;</span><span class="p">:</span> <span class="s2">&quot;An error occured when executing command&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)),</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span> <span class="mi">400</span></div></div>
+
+<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../index.html#api.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class represents the Scheduler resource</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">format_jobs</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">jobs</span><span class="p">},</span> <span class="mi">200</span>
+
+    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">is_started</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Scheduler is already running&quot;</span><span class="p">},</span> <span class="mi">409</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule_events</span><span class="p">(</span><span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">events</span><span class="p">,</span> <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">topology</span><span class="p">)</span>
+            <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;Scheduler is being started. It has the following jobs&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;jobs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">()},</span> <span class="mi">200</span></div>
+
+<div class="viewcode-block" id="Job"><a class="viewcode-back" href="../index.html#api.Job">[docs]</a><span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class represents a scheduler job resource</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">job_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="n">API</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">format_jobs</span><span class="p">(</span><span class="n">job_id</span><span class="o">=</span><span class="n">job_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">jobs</span><span class="p">[</span><span class="mi">0</span><span class="p">]},</span> <span class="mi">200</span></div>
+
+
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Rudy Ailabouni.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

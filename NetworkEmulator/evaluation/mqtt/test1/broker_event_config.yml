@@ -1,0 +1,269 @@
+event:
+  parameters:
+    link_params:
+      delay: 148887.0
+    node1: left
+    node2: right
+  time: 0.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 109358.0
+    node1: left
+    node2: right
+  time: 1.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 514633.00000000006
+    node1: left
+    node2: right
+  time: 2.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 149612.0
+    node1: left
+    node2: right
+  time: 3.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 164802.0
+    node1: left
+    node2: right
+  time: 4.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 180820.0
+    node1: left
+    node2: right
+  time: 5.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 124084.0
+    node1: left
+    node2: right
+  time: 6.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 106226.0
+    node1: left
+    node2: right
+  time: 7.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 107774.0
+    node1: left
+    node2: right
+  time: 8.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 104918.0
+    node1: left
+    node2: right
+  time: 9.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 103127.0
+    node1: left
+    node2: right
+  time: 10.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 109782.0
+    node1: left
+    node2: right
+  time: 11.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 104710.0
+    node1: left
+    node2: right
+  time: 12.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 104357.0
+    node1: left
+    node2: right
+  time: 13.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 113032.0
+    node1: left
+    node2: right
+  time: 14.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 105055.0
+    node1: left
+    node2: right
+  time: 15.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 105238.0
+    node1: left
+    node2: right
+  time: 16.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 102930.0
+    node1: left
+    node2: right
+  time: 17.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 105863.0
+    node1: left
+    node2: right
+  time: 18.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 118930.0
+    node1: left
+    node2: right
+  time: 19.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 106450.0
+    node1: left
+    node2: right
+  time: 20.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 102867.0
+    node1: left
+    node2: right
+  time: 21.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 104464.0
+    node1: left
+    node2: right
+  time: 22.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 267959.0
+    node1: left
+    node2: right
+  time: 23.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 107999.0
+    node1: left
+    node2: right
+  time: 24.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 158307.0
+    node1: left
+    node2: right
+  time: 25.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 173521.0
+    node1: left
+    node2: right
+  time: 26.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 133688.0
+    node1: left
+    node2: right
+  time: 27.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 166581.0
+    node1: left
+    node2: right
+  time: 28.0 seconds
+  type: LinkUpdate
+---
+event:
+  parameters:
+    link_params:
+      delay: 174318.0
+    node1: left
+    node2: right
+  time: 29.0 seconds
+  type: LinkUpdate
