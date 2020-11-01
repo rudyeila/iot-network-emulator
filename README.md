@@ -1,15 +1,15 @@
 # Table of Contents
-1. [Installation](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#installation)
-    1. [Requirements](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#requirements)
-    2. [CORE Installation](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#core-installation) 
-    3. [CORE Installation from Source (Less recommended)](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#core-installation-from-source-less-recommended)
-    4. [Installing our Network Emulator](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#installing-our-network-emulator)
-2. [Documentation](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#documentation)
-3. [Usage](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#usage)
-    1. [Topology Config File](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#topology-configuration-file)
-    2. [Event Config File](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#event-configuration-file)
-    3. [RESTAPI](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#restapi)
-4. [FAQ](https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator/blob/master/README.md#faq)
+1. [Installation](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#installation)
+    1. [Requirements](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#requirements)
+    2. [CORE Installation](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#core-installation) 
+    3. [CORE Installation from Source (Less recommended)](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#core-installation-from-source-less-recommended)
+    4. [Installing our Network Emulator](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#installing-our-network-emulator)
+2. [Documentation](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#documentation)
+3. [Usage](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#usage)
+    1. [Topology Config File](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#topology-configuration-file)
+    2. [Event Config File](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#event-configuration-file)
+    3. [RESTAPI](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#restapi)
+4. [FAQ](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#faq)
 
 
 # Installation
@@ -129,7 +129,7 @@ Once CORE is installed, our network emulator, which internally relies on CORE, c
 To do this, you need to clone this respository and cd into the Network Emulator folder:    
 
 ```bash
-git clone https://gitlab2.informatik.uni-wuerzburg.de/descartes/iot-and-cps/iot-network-emulator.git
+git clone https://github.com/rudyeila/iot-network-emulator.git
 cd 2019_ba_rudy_ailabouni/NetworkEmulator/
 ```
 
