@@ -9,7 +9,7 @@ requests==2.22.0
 #pingparsing==0.18.1
 PyYAML==5.4
 future==0.17.1
-lxml==4.3.3
+lxml==4.6.3
 #futures==3.3.0
 #docker_py==1.10.6
 protobuf==3.9.1
