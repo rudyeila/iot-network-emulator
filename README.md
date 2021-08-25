@@ -1,3 +1,11 @@
+This network emulator was developed as part of my Bachelor's thesis at the Julius Maximilian University of Würzburg between April and September of 2019. A publication related to my Bachelor thesis can be found at [https://link.springer.com/chapter/10.1007/978-3-030-72795-6_47]. 
+
+Using this emulator, you can construct complex network topologies and connect them to actual physical computers. You can variate many different parameters at each node, such as the bandwidth and latency, in order to achieve arbitrary network conditions. This can be especially useful for testing IoT or mobile application's behavior under variable network conditions. 
+
+Another major feature of this emulator is the ability to provide network traces that are captured over a period of time, which the emulator can then recreate in real-time to a high degree of accuracy. This allows you to easily have repeatable measurements. 
+
+An example usecase would be to test a navigation app in an area with a spotty network connection. An initial "real-life" test can be done in the area in question and network measurements can be made. These measurements can then be converted to a trace format that the emulator expects and provided as an input to the emulator. Now, you no longer need to perform the "real-life" test when you change you software, rather you can use the emulator's ability to accurately recreate the real-life conditions and perform any necessary tests from the comfort of your office. 
+
 # Table of Contents
 1. [Installation](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#installation)
     1. [Requirements](https://github.com/rudyeila/iot-network-emulator/blob/master/README.md#requirements)
